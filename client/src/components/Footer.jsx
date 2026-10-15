@@ -5,7 +5,7 @@ import SH from '/SH.png'
 
 const Footer = () => {
   return (
-    <footer className="w-full border-t border-white/[0.08] bg-background mt-auto relative z-0">
+    <footer className="w-full border-t border-white/[0.08] mt-auto relative z-[1]">
       <div className="max-w-6xl mx-auto px-6 py-14">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           {/* Brand & Mission Column */}

@@ -39,15 +39,14 @@ const Contact = () => {
 
   return (
     <div className="w-full">
-      <div className="max-w-6xl mx-auto px-6 pt-12 pb-20">
+      <div data-circuit-section className="screen-section max-w-6xl mx-auto px-6">
         <div className="min-h-[70vh] grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
           {/* Left Column: Editorial Copy & Context */}
           <motion.div 
             className="lg:col-span-5 space-y-6"
             initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }} 
           >
             <p className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent mb-2">
@@ -176,7 +175,7 @@ const Contact = () => {
       </div>
 
       {/* FAQ SECTION */}
-      <div ref={faqRef} className="border-t border-white/[0.08] bg-white/[0.01]">
+      <div ref={faqRef} data-circuit-section className="scroll-mt-16 border-t border-white/[0.08] bg-white/[0.01]">
         <FAQ />
       </div>
 

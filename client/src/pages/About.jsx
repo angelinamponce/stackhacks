@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, Pagination, Autoplay } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
 import { client } from '../sanityClient'
 import { CircularDisplay } from '../components/CircularDisplay'
-import { ArrowLeft, ArrowRight, Bell, FileText, Calendar, Globe } from 'lucide-react'
+import FoundersCarousel from '../components/FoundersCarousel'
+import { CountUp, Reveal } from '../components/Interactive'
+import { spotlightHandlers } from '../lib/pointer'
+import { Bell, FileText, Calendar, Globe } from 'lucide-react'
+import LoadError from '../components/LoadError'
+
+// Founders hidden from the carousel (matched case-insensitively on name).
+const EXCLUDED_FOUNDERS = ['shahida chowdhury']
+
+const SECTIONS = [
+  { id: 'story', label: 'Our Story' },
+  { id: 'founders', label: 'Founders' },
+  { id: 'get-involved', label: 'Get Involved' },
+]
 
 const getInvolvedSteps = [
   {
@@ -46,19 +54,84 @@ const fallbackAbout = [
   }
 ]
 
+function SectionHeading({ eyebrow, title, children }) {
+  return (
+    <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      <div className="space-y-3">
+        <span className="eyebrow">{eyebrow}</span>
+        <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-primary">{title}</h2>
+      </div>
+      {children}
+    </Reveal>
+  )
+}
+
+/** Sticky pill nav that highlights whichever section is in view. */
+function SectionNav() {
+  const [activeId, setActiveId] = useState(SECTIONS[0].id)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting)
+        if (visible.length) setActiveId(visible[0].target.id)
+      },
+      { rootMargin: '-45% 0px -50% 0px' }
+    )
+    SECTIONS.forEach(({ id }) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <nav aria-label="On this page" className="flex justify-center">
+      <ul className="flex items-center gap-1 rounded-full border border-white/10 bg-background/70 p-1 backdrop-blur-xl shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)]">
+        {SECTIONS.map(({ id, label }) => {
+          const isActive = activeId === id
+          return (
+            <li key={id}>
+              <a
+                href={`#${id}`}
+                aria-current={isActive ? 'location' : undefined}
+                className={`relative isolate block rounded-full px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors duration-300 ${
+                  isActive ? 'text-black' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="about-section-pill"
+                    className="absolute inset-0 -z-10 rounded-full bg-accent shadow-[0_0_20px_-4px_rgba(254,178,58,0.7)]"
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative">{label}</span>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
+  )
+}
+
 const About = () => {
   const [founders, setFounders] = useState([])
   const [about, setAbout] = useState([])
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [foundersData, aboutData] = await Promise.all([
+        const [foundersData, aboutData, counts] = await Promise.all([
           client.fetch(`*[_type == "founder"] | order(_createdAt asc) {
             _id,
             name,
             position,
+            bio,
             "image": image.asset->url,
           }`),
           client.fetch(`*[_type == "about"] | order(_createdAt asc) {
@@ -68,11 +141,23 @@ const About = () => {
             text,
             "image": image.asset->url,
           }`),
+          client.fetch(`{
+            "projects": count(*[_type == "project"]),
+            "events": count(*[_type == "event"]),
+            "leaders": count(*[_type == "eboard"]),
+            "partners": count(*[_type == "company"]),
+          }`),
         ])
-        setFounders(foundersData || [])
+        setFounders(
+          (foundersData || []).filter(
+            (f) => !EXCLUDED_FOUNDERS.includes(f.name?.trim().toLowerCase())
+          )
+        )
         setAbout(aboutData?.length ? aboutData : fallbackAbout)
+        setStats(counts)
       } catch (e) {
         console.error("Failed to fetch data from Sanity: ", e)
+        setLoadError(true)
         setAbout(fallbackAbout)
       } finally {
         setLoading(false)
@@ -81,156 +166,112 @@ const About = () => {
     fetchData()
   }, [])
 
+  const statItems = stats
+    ? [
+        { label: 'Active Projects', value: stats.projects },
+        { label: 'Events Hosted', value: stats.events },
+        { label: 'Student Leaders', value: stats.leaders },
+        { label: 'Companies Represented', value: stats.partners },
+      ].filter((s) => s.value > 0)
+    : []
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 space-y-24">
+    <div className="relative">
+      <div className="max-w-6xl mx-auto px-6 pt-8 sm:pt-10">
+        <SectionNav />
 
-      {/* ── About Us (Circular Showcase) ── */}
-      <section>
-        {loading ? (
-          <div className="text-center text-secondary/50 py-16">Loading Story...</div>
-        ) : (
-          <CircularDisplay testimonials={about} autoplay={true} />
-        )}
-      </section>
+        {/* ── Our Story ── */}
+        <section id="story" className="screen-section space-y-14 sm:space-y-16">
+          {loading ? (
+            <div className="h-[25rem] animate-pulse rounded-3xl bg-white/[0.02]" />
+          ) : (
+            <CircularDisplay testimonials={about} autoplay={true} />
+          )}
 
-      {/* ── Meet the Founders ── */}
-      <section className="space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/[0.08] pb-5"
-        >
-          <div>
-            <p className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent mb-1">
-              Origins
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary">
-              Meet the Founders
-            </h2>
-          </div>
+          {loadError && <LoadError what="the latest club stats and photos" />}
 
-          {/* Dedicated External Carousel Navigation */}
-          {founders.length > 1 && (
-            <div className="flex items-center gap-2">
-              <button
-                id="founders-prev"
-                type="button"
-                aria-label="Previous slide"
-                className="w-10 h-10 rounded-full border border-white/15 bg-white/[0.03] text-primary flex items-center justify-center hover:border-accent/60 hover:text-accent hover:bg-white/[0.06] transition-all duration-200 cursor-pointer disabled:opacity-30"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                id="founders-next"
-                type="button"
-                aria-label="Next slide"
-                className="w-10 h-10 rounded-full border border-white/15 bg-white/[0.03] text-primary flex items-center justify-center hover:border-accent/60 hover:text-accent hover:bg-white/[0.06] transition-all duration-200 cursor-pointer disabled:opacity-30"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
+          {statItems.length > 0 && (
+            <dl className="grid grid-cols-2 lg:grid-cols-4 border-y border-white/[0.08]">
+              {statItems.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`flex flex-col-reverse items-center justify-end gap-2 px-4 py-8 sm:py-10 text-center
+                    ${i % 2 === 1 ? 'border-l border-white/[0.08]' : ''}
+                    ${i >= 2 ? 'border-t border-white/[0.08] lg:border-t-0' : ''}
+                    ${i === 2 ? 'lg:border-l' : ''}`}
+                >
+                  <dt className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-secondary/70">
+                    {stat.label}
+                  </dt>
+                  <dd className="text-4xl sm:text-5xl font-semibold tracking-tight bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">
+                    <CountUp to={stat.value} suffix={stat.suffix} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </section>
+
+        {/* ── Meet the Founders ── */}
+        <section id="founders" className="screen-section space-y-10">
+          <SectionHeading eyebrow="Origins" title="Meet the Founders" />
+
+          {loading ? (
+            <div className="h-[30rem] animate-pulse rounded-3xl bg-white/[0.02]" />
+          ) : founders.length > 0 ? (
+            <Reveal>
+              <FoundersCarousel founders={founders} />
+            </Reveal>
+          ) : loadError ? (
+            <LoadError what="the founders" />
+          ) : (
+            <div className="text-center text-secondary/50 py-12">
+              No founders registered currently.
             </div>
           )}
-        </motion.div>
+        </section>
 
-        {loading ? (
-          <div className="text-center text-secondary/50 py-16">Loading Founders...</div>
-        ) : founders.length > 0 ? (
-          <Swiper
-            modules={[Navigation, Pagination, Autoplay]}
-            spaceBetween={24}
-            slidesPerView={1}
-            loop={founders.length > 3}
-            navigation={{
-              prevEl: '#founders-prev',
-              nextEl: '#founders-next',
-            }}
-            pagination={{ clickable: true }}
-            speed={600}
-            autoplay={{ delay: 3500, disableOnInteraction: false }}
-            breakpoints={{
-              640: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
-            }}
-            className="pb-10"
+        {/* ── How to Get Involved ── */}
+        <section id="get-involved" className="screen-section space-y-10">
+          <SectionHeading eyebrow="Join the Community" title="How to Get Involved" />
+
+          <ol
+            className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
           >
-            {founders.map((founder, i) => (
-              <SwiperSlide key={founder._id || i}>
-                <div className="tech-card group p-5 flex flex-col items-center gap-4 cursor-pointer transition-all duration-300 hover:border-accent/50 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-                  <div className="relative w-full aspect-[4/5] overflow-hidden rounded-xl bg-white/[0.04]">
-                    <img
-                      src={founder.image}
-                      alt={founder.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                  <div className="text-center w-full space-y-1">
-                    <h3 className="text-xl font-semibold text-primary group-hover:text-accent transition-colors">
-                      {founder.name}
-                    </h3>
-                    <span className="inline-block text-xs font-medium uppercase tracking-wider text-accent/90">
-                      {founder.position}
-                    </span>
-                  </div>
-                </div>
-              </SwiperSlide>
+            {/* Thin gold thread linking the steps on desktop */}
+            <div className="pointer-events-none absolute left-8 right-8 top-[3.25rem] hidden h-px bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 lg:block" />
+            {getInvolvedSteps.map((step, i) => (
+              <Reveal as="li" key={step.step} delay={i * 0.1}>
+                <StepCard step={step} />
+              </Reveal>
             ))}
-          </Swiper>
-        ) : (
-          <div className="text-center text-secondary/50 py-12">
-            No founders registered currently.
-          </div>
-        )}
-      </section>
+          </ol>
+        </section>
 
-      {/* ── How to Get Involved ── */}
-      <section className="space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-        >
-          <p className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent mb-1">
-            Join the Community
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary">
-            How to Get Involved
-          </h2>
-        </motion.div>
+      </div>
+    </div>
+  )
+}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {getInvolvedSteps.map((step) => {
-            const Icon = step.icon
-            return (
-              <div
-                key={step.step}
-                className="tech-card p-6 flex flex-col justify-between space-y-5 hover:border-accent/40 group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:scale-105 transition-transform">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-secondary/40">
-                    {step.step}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-primary group-hover:text-accent transition-colors">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-secondary leading-relaxed">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
+function StepCard({ step }) {
+  const Icon = step.icon
+  return (
+    <div
+      {...spotlightHandlers}
+      className="glass-card spotlight spotlight-border group h-full p-7 flex flex-col gap-6 transition-transform duration-500 hover:-translate-y-1"
+    >
+      <div className="flex items-center justify-between">
+        <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-b from-accent/20 to-accent/5 border border-accent/25 flex items-center justify-center text-accent transition-all duration-500 group-hover:shadow-[0_0_24px_-4px_rgba(254,178,58,0.6)] group-hover:scale-105">
+          <Icon className="w-5 h-5" />
         </div>
-      </section>
-
+        <span className="text-sm font-medium tabular-nums tracking-widest text-secondary/40 group-hover:text-accent/80 transition-colors duration-500">
+          {step.step}
+        </span>
+      </div>
+      <div className="space-y-2.5">
+        <h3 className="text-lg font-semibold text-primary">{step.title}</h3>
+        <p className="text-sm text-secondary leading-relaxed">{step.description}</p>
+      </div>
     </div>
   )
 }

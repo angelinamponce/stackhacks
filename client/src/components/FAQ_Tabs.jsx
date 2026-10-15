@@ -23,8 +23,7 @@ export const FAQ_Tabs = ({
         {/* Left Column: Eyebrow, Title & Category Selector */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
           className="lg:col-span-4 space-y-6"
         >

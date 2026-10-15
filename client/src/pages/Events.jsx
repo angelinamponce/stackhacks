@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { client } from '../sanityClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Clock, MapPin, ExternalLink, Calendar as CalendarIcon, X } from 'lucide-react'
+import LoadError from '../components/LoadError'
 
 const DAYS_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
@@ -136,6 +137,7 @@ function EventDetailModal({ event, onClose }) {
 const Events = () => {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [activeTab, setActiveTab] = useState('upcoming') // 'upcoming' | 'past'
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -171,6 +173,7 @@ const Events = () => {
         }
       } catch (e) {
         console.error("Failed to fetch events from Sanity: ", e)
+        setLoadError(true)
       } finally {
         setLoading(false)
       }
@@ -257,12 +260,11 @@ const Events = () => {
   }, [activeTab, upcomingEvents, pastEvents, selectedDate, eventsByDate])
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-6 py-12">
+    <div data-circuit-section className="screen-section w-full max-w-6xl mx-auto px-6">
       {/* Page Title with Woosh-in */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="mb-10 space-y-2"
       >
@@ -280,8 +282,7 @@ const Events = () => {
         {/* ── Left Column: Calendar Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="lg:col-span-7 tech-card p-6 sm:p-8 bg-[#141416]/95 border border-white/10 shadow-xl"
         >
@@ -436,8 +437,7 @@ const Events = () => {
         {/* ── Right Column: Upcoming/Past Tabs & Event Cards (Matching Image) ── */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           className="lg:col-span-5 space-y-6"
         >
@@ -473,6 +473,8 @@ const Events = () => {
               <div className="tech-card p-10 text-center text-secondary/50">
                 Loading events...
               </div>
+            ) : loadError ? (
+              <LoadError what="events" />
             ) : displayedEvents.length > 0 ? (
               displayedEvents.map((event, index) => {
                 const eventDate = event.date ? new Date(event.date) : null

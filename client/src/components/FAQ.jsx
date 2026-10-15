@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { FAQ_Tabs } from './FAQ_Tabs';
 import { client } from '../sanityClient';
+import LoadError from './LoadError';
 
 const FAQ = () => {
   const [categories, setCategories] = useState({});
   const [faqData, setFaqData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const fetchFAQ = async () => {
@@ -31,6 +33,7 @@ const FAQ = () => {
         setFaqData(faqDataMap);
       } catch (e) {
         console.error("Failed to fetch FAQ from Sanity: ", e);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -39,6 +42,7 @@ const FAQ = () => {
     fetchFAQ();
   }, []);
 
+  if (loadError) return <LoadError what="the FAQ" className="my-6" />;
   if (loading || Object.keys(categories).length === 0) return null;
 
   return (

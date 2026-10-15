@@ -1,221 +1,191 @@
-"use client";
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
-import { ArrowLeft, ArrowRight, Quote } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 
-function calculateGap(width) {
-  const minWidth = 1024;
-  const maxWidth = 1456;
-  const minGap = 50;
-  const maxGap = 80;
-  if (width <= minWidth) return minGap;
-  if (width >= maxWidth)
-    return Math.max(minGap, maxGap + 0.06 * (width - maxWidth));
-  return minGap + (maxGap - minGap) * ((width - minWidth) / (maxWidth - minWidth));
+const SPRING = { type: "spring", stiffness: 120, damping: 24, mass: 1 };
+const AUTOPLAY_MS = 6000;
+
+// Position of each photo in the stack relative to the active one.
+function slotFor(index, active, length) {
+  if (index === active) return "active";
+  if ((active - 1 + length) % length === index) return "left";
+  if ((active + 1) % length === index) return "right";
+  return "hidden";
 }
 
-export const CircularDisplay = ({
-  testimonials = [],
-  autoplay = true,
-}) => {
+const SLOT_STYLES = {
+  active: { x: "0%", y: 0, scale: 1, rotateY: 0, rotateZ: 0, opacity: 1, zIndex: 3, filter: "blur(0px) brightness(1)" },
+  left:   { x: "-30%", y: -10, scale: 0.86, rotateY: 12, rotateZ: -2, opacity: 0.5, zIndex: 2, filter: "blur(1px) brightness(0.6)" },
+  right:  { x: "30%", y: -10, scale: 0.86, rotateY: -12, rotateZ: 2, opacity: 0.5, zIndex: 2, filter: "blur(1px) brightness(0.6)" },
+  hidden: { x: "0%", y: 8, scale: 0.75, rotateY: 0, rotateZ: 0, opacity: 0, zIndex: 1, filter: "blur(3px) brightness(0.5)" },
+};
+
+export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(1000);
-  const imageContainerRef = useRef(null);
-  const autoplayIntervalRef = useRef(null);
+  const [paused, setPaused] = useState(false);
+  const reduce = useReducedMotion();
+  const length = testimonials.length;
 
-  const testimonialsLength = useMemo(() => (testimonials?.length || 0), [testimonials]);
-  const activeTestimonial = useMemo(() => {
-    if (!testimonials || testimonials.length === 0) return null;
-    return testimonials[activeIndex] || testimonials[0];
-  }, [activeIndex, testimonials]);
+  // Mouse parallax on the photo stack
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotX = useSpring(useTransform(my, [-0.5, 0.5], [4, -4]), { stiffness: 120, damping: 18 });
+  const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-5, 5]), { stiffness: 120, damping: 18 });
 
-  useEffect(() => {
-    function handleResize() {
-      if (imageContainerRef.current) {
-        setContainerWidth(imageContainerRef.current.offsetWidth);
-      }
-    }
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const go = (dir) => length > 1 && setActiveIndex((i) => (i + dir + length) % length);
 
   useEffect(() => {
-    if (autoplay && testimonialsLength > 1) {
-      autoplayIntervalRef.current = setInterval(() => {
-        setActiveIndex((prev) => (prev + 1) % testimonialsLength);
-      }, 6000);
-    }
-    return () => {
-      if (autoplayIntervalRef.current) clearInterval(autoplayIntervalRef.current);
-    };
-  }, [autoplay, testimonialsLength]);
+    if (!autoplay || paused || reduce || length <= 1) return;
+    const id = setTimeout(() => setActiveIndex((i) => (i + 1) % length), AUTOPLAY_MS);
+    return () => clearTimeout(id);
+  }, [autoplay, paused, reduce, length, activeIndex]);
 
-  const handleNext = useCallback(() => {
-    if (testimonialsLength <= 1) return;
-    setActiveIndex((prev) => (prev + 1) % testimonialsLength);
-    if (autoplayIntervalRef.current) clearInterval(autoplayIntervalRef.current);
-  }, [testimonialsLength]);
+  if (!length) return null;
 
-  const handlePrev = useCallback(() => {
-    if (testimonialsLength <= 1) return;
-    setActiveIndex((prev) => (prev - 1 + testimonialsLength) % testimonialsLength);
-    if (autoplayIntervalRef.current) clearInterval(autoplayIntervalRef.current);
-  }, [testimonialsLength]);
+  const handlePointerMove = (e) => {
+    if (reduce || e.pointerType !== "mouse") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    mx.set((e.clientX - r.left) / r.width - 0.5);
+    my.set((e.clientY - r.top) / r.height - 0.5);
+  };
 
-  if (!testimonials || testimonials.length === 0 || !activeTestimonial) {
-    return null;
-  }
-
-  function getImageStyle(index) {
-    const gap = calculateGap(containerWidth);
-    const maxStickUp = gap * 0.7;
-    const isActive = index === activeIndex;
-    const isLeft = (activeIndex - 1 + testimonialsLength) % testimonialsLength === index;
-    const isRight = (activeIndex + 1) % testimonialsLength === index;
-
-    if (isActive) {
-      return {
-        zIndex: 3,
-        opacity: 1,
-        pointerEvents: "auto",
-        transform: `translateX(0px) translateY(0px) scale(1) rotateY(0deg)`,
-        transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-      };
-    }
-    if (isLeft) {
-      return {
-        zIndex: 2,
-        opacity: 0.8,
-        pointerEvents: "auto",
-        transform: `translateX(-${gap}px) translateY(-${maxStickUp}px) scale(0.88) rotateY(12deg)`,
-        transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-      };
-    }
-    if (isRight) {
-      return {
-        zIndex: 2,
-        opacity: 0.8,
-        pointerEvents: "auto",
-        transform: `translateX(${gap}px) translateY(-${maxStickUp}px) scale(0.88) rotateY(-12deg)`,
-        transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-      };
-    }
-    return {
-      zIndex: 1,
-      opacity: 0,
-      pointerEvents: "none",
-      transform: `translateX(0px) translateY(0px) scale(0.7)`,
-      transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-    };
-  }
-
-  const quoteWords = activeTestimonial.text ? activeTestimonial.text.split(" ") : [];
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+  };
 
   return (
-    <div className="w-full max-w-5xl mx-auto py-8">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center">
-        {/* 3D Stacking Image Showcase */}
-        <div className="md:col-span-6">
-          <div
-            className="relative w-full h-80 sm:h-96 [perspective:1000px] flex items-center justify-center"
-            ref={imageContainerRef}
-          >
-            {testimonials.map((testimonial, index) => (
-              <img
-                key={testimonial.image || index}
-                src={testimonial.image}
-                alt={testimonial.title}
-                className="absolute w-64 sm:w-72 h-80 sm:h-88 object-cover rounded-2xl border border-white/15 shadow-2xl"
-                style={getImageStyle(index)}
-              />
-            ))}
-          </div>
+    <div
+      className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => { setPaused(false); mx.set(0); my.set(0); }}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      {/* Photo stack with depth + parallax */}
+      <div>
+        <motion.div
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="About StackHacks photos"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          onPointerMove={handlePointerMove}
+          style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1100 }}
+          className="relative mx-auto h-[21rem] sm:h-[25rem] w-full max-w-md [transform-style:preserve-3d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-3xl"
+        >
+          {/* Ambient gold halo behind the stack */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/15 blur-[90px]" />
+
+          {testimonials.map((item, index) => {
+            const slot = slotFor(index, activeIndex, length);
+            return (
+              <motion.button
+                key={item._id || index}
+                type="button"
+                tabIndex={-1}
+                aria-hidden={slot !== "active"}
+                onClick={() => slot === "left" ? go(-1) : slot === "right" ? go(1) : null}
+                drag={slot === "active" && length > 1 ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.25}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -60 || info.velocity.x < -400) go(1);
+                  else if (info.offset.x > 60 || info.velocity.x > 400) go(-1);
+                }}
+                initial={false}
+                animate={SLOT_STYLES[slot]}
+                transition={reduce ? { duration: 0 } : SPRING}
+                style={{ pointerEvents: slot === "hidden" ? "none" : "auto" }}
+                className="absolute inset-x-0 mx-auto top-3 h-[19rem] sm:h-[23rem] w-60 sm:w-72 overflow-hidden rounded-[1.75rem] border border-white/15 bg-card shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] cursor-grab active:cursor-grabbing"
+              >
+                <img
+                  src={item.image}
+                  alt={slot === "active" ? (item.subtitle || item.title) : ""}
+                  draggable={false}
+                  className="h-full w-full object-cover select-none"
+                />
+                <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-white/10" />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-white/[0.06]" />
+              </motion.button>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      {/* Story copy: every slide shares one grid cell, so the block keeps the
+          height of the longest slide and nothing below it jumps. */}
+      <div className="flex flex-col gap-8">
+        <div className="grid" aria-live="polite">
+          {testimonials.map((item, index) => {
+            const isActive = index === activeIndex;
+            return (
+              <div
+                key={item._id || index}
+                aria-hidden={!isActive}
+                className={`[grid-area:1/1] space-y-5 transition-[opacity,translate] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isActive ? "opacity-100 translate-y-0" : "pointer-events-none invisible opacity-0 translate-y-3"
+                }`}
+              >
+                <span className="eyebrow">{item.subtitle || "Who We Are"}</span>
+                <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary leading-[1.05]">
+                  {item.title}
+                </h2>
+                <p className="text-secondary text-base sm:text-lg leading-relaxed max-w-xl">{item.text}</p>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Testimonial / Story Content */}
-        <div className="md:col-span-6 flex flex-col justify-between space-y-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeIndex}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.35, ease: "easeInOut" }}
-              className="space-y-4"
-            >
-              <div className="inline-flex items-center gap-1.5 text-accent">
-                <Quote className="w-5 h-5 opacity-70" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-                  {activeTestimonial.subtitle || "Who We Are"}
-                </span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary">
-                {activeTestimonial.title}
-              </h2>
-
-              <p className="text-secondary text-sm sm:text-base leading-relaxed">
-                {quoteWords.map((word, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, filter: "blur(0px)" }}
-                    transition={{
-                      duration: 0.2,
-                      delay: Math.min(0.015 * i, 0.4),
-                    }}
-                    className="inline-block"
-                  >
-                    {word}&nbsp;
-                  </motion.span>
-                ))}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Sleek Navigation Controls */}
-          {testimonialsLength > 1 && (
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handlePrev}
-                aria-label="Previous story"
-                className="w-10 h-10 rounded-full border border-white/15 bg-white/[0.03] text-primary flex items-center justify-center hover:border-accent/60 hover:text-accent hover:bg-white/[0.06] transition-all duration-200 cursor-pointer"
-              >
+        {length > 1 && (
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <div className="flex items-center gap-2.5">
+              <button type="button" onClick={() => go(-1)} aria-label="Previous slide" className="btn-icon">
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                aria-label="Next story"
-                className="w-10 h-10 rounded-full border border-white/15 bg-white/[0.03] text-primary flex items-center justify-center hover:border-accent/60 hover:text-accent hover:bg-white/[0.06] transition-all duration-200 cursor-pointer"
-              >
+              <button type="button" onClick={() => go(1)} aria-label="Next slide" className="btn-icon">
                 <ArrowRight className="w-4 h-4" />
               </button>
+            </div>
 
-              <div className="flex items-center gap-1.5 ml-3">
-                {testimonials.map((_, idx) => (
+            {/* Progress dots: the active one fills over the autoplay interval */}
+            <div className="flex items-center gap-2">
+              {testimonials.map((_, idx) => {
+                const isActive = idx === activeIndex;
+                return (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setActiveIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-200 ${
-                      idx === activeIndex ? "w-6 bg-accent" : "w-1.5 bg-white/20 hover:bg-white/40"
-                    }`}
                     aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
+                    aria-current={isActive}
+                    className={`relative h-1.5 overflow-hidden rounded-full bg-white/15 transition-all duration-500 ease-out hover:bg-white/30 cursor-pointer ${isActive ? "w-10" : "w-1.5"}`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        key={`${activeIndex}-${paused}`}
+                        className="absolute inset-y-0 left-0 rounded-full bg-accent"
+                        initial={{ width: autoplay && !paused && !reduce ? "0%" : "100%" }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: autoplay && !paused && !reduce ? AUTOPLAY_MS / 1000 : 0, ease: "linear" }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </div>
+
+            <span className="text-xs font-medium tabular-nums tracking-[0.2em] text-secondary/60">
+              {String(activeIndex + 1).padStart(2, "0")} / {String(length).padStart(2, "0")}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

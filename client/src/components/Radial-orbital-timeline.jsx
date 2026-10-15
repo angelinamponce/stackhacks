@@ -174,6 +174,7 @@ export default function RadialOrbitalTimeline({ timelineData }) {
 
   return (
     <div
+      data-circuit-avoid
       className="flex min-h-[450px] w-full items-center justify-center overflow-visible bg-background py-6 sm:py-8"
       ref={containerRef}
       onClick={handleContainerClick}

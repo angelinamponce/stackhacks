@@ -18,6 +18,7 @@ const Navbar = () => {
         {/* Brand Logo */}
         <NavLink
           to="/"
+          data-nav-brand
           className="flex items-center gap-2.5 text-primary group font-semibold tracking-tight text-base focus:outline-none"
         >
           <img
@@ -37,7 +38,7 @@ const Navbar = () => {
               key={item.link}
               to={item.link}
               className={({ isActive }) =>
-                `relative py-1 text-sm font-medium transition-colors duration-200 ${
+                `group relative py-1 text-sm font-medium transition-colors duration-300 ${
                   isActive
                     ? 'text-primary'
                     : 'text-secondary hover:text-primary'
@@ -47,6 +48,9 @@ const Navbar = () => {
               {({ isActive }) => (
                 <div className="relative flex flex-col items-center">
                   <span>{item.label}</span>
+                  {!isActive && (
+                    <span className="absolute -bottom-1.5 left-1/2 right-1/2 h-px bg-accent/60 rounded-full transition-all duration-300 ease-out group-hover:left-0 group-hover:right-0" />
+                  )}
                   {isActive && (
                     <motion.span
                       layoutId="navbar-underline"

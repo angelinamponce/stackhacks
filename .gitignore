@@ -416,3 +416,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Local env files, build output and OS files (added before publishing the redesign)
+.env
+.env.*
+build/
+.next/
+.DS_Store

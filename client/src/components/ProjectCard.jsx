@@ -1,168 +1,217 @@
-import { useState, useRef, useEffect } from "react"
+import { useId, useRef } from "react"
 import { createPortal } from "react-dom"
-import { AnimatePresence, motion } from "framer-motion"
-import { X, Code2 } from "lucide-react"
+import { motion } from "framer-motion"
+import { ArrowUpRight, Code2, ExternalLink, Github, X } from "lucide-react"
+import { spotlightHandlers } from "../lib/pointer"
+import { useDialog } from "../lib/dialog"
+import { projectTrack } from "../lib/projects"
 
-export function ProjectModal({ project, onClose }) {
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") onClose()
-    }
-    document.body.style.overflow = "hidden"
-    window.addEventListener("keydown", onKeyDown)
-    return () => {
-      document.body.style.overflow = ""
-      window.removeEventListener("keydown", onKeyDown)
-    }
-  }, [onClose])
+const splitSections = (sections = []) => ({
+  about: sections.find((s) => /about/i.test(s.heading || ""))?.body,
+  team: sections.filter((s) => /team/i.test(s.heading || "")),
+  other: sections.filter((s) => !/about|team/i.test(s.heading || "")),
+})
 
-  if (!project) return null
+// Logos and screenshots vary in shape, so images are contained (never cropped) on a dark stage.
+function Cover({ project, className = "" }) {
+  return project.image ? (
+    <img
+      src={project.image}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className={`h-full w-full object-contain ${className}`}
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center">
+      <Code2 className="h-12 w-12 text-accent/50" />
+    </div>
+  )
+}
+
+function Tags({ project, details }) {
+  const track = projectTrack(project)
+  const tags = [track, ...(details?.techStack || [])].filter(Boolean)
+  if (!tags.length) return null
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {tags.map((tag, i) => (
+        <li
+          key={tag}
+          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+            i === 0 && track ? "border-accent/40 text-accent" : "border-white/15 text-secondary"
+          }`}
+        >
+          {tag}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Links({ details, size = "sm" }) {
+  if (!details?.liveUrl && !details?.githubUrl) return null
+  const cls =
+    size === "sm"
+      ? "inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:border-accent/60 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+      : null
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {details.liveUrl && (
+        <a href={details.liveUrl} target="_blank" rel="noopener noreferrer" className={cls || "btn-primary"}>
+          <ExternalLink className="h-3.5 w-3.5" /> Live
+        </a>
+      )}
+      {details.githubUrl && (
+        <a href={details.githubUrl} target="_blank" rel="noopener noreferrer" className={cls || "btn-secondary"}>
+          <Github className="h-3.5 w-3.5" /> GitHub
+        </a>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────── Modal ─────────────────────────── */
+
+export function ProjectModal({ project, details = {}, onClose }) {
+  const dialogRef = useRef(null)
+  const closeRef = useRef(null)
+  const titleId = useId()
+  useDialog(dialogRef, onClose, closeRef)
+
+  const { about, team, other } = splitSections(project.sections)
 
   return createPortal(
     <motion.div
+      className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md"
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 16 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-[#141416] border border-white/15 shadow-2xl overflow-hidden"
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-3xl max-h-[88vh] overflow-y-auto overscroll-contain rounded-3xl border border-white/10 bg-gradient-to-b from-[#18181b] to-[#111113] shadow-[0_40px_100px_-30px_rgba(0,0,0,0.9),0_0_60px_-30px_rgba(254,178,58,0.5)]"
       >
-        {/* Cover Image */}
-        <div className="relative h-60 sm:h-72 w-full overflow-hidden shrink-0 bg-white/[0.02]">
-          {project.image ? (
-            <img
-              src={project.image}
-              alt={project.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-accent/20 via-[#1a1a1c] to-background flex items-center justify-center">
-              <Code2 className="w-16 h-16 text-accent/50" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#141416] via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
 
-          {/* Close Button */}
-          <button
-            type="button"
-            aria-label="Close dialog"
-            onClick={onClose}
-            className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full border border-white/15 bg-black/60 backdrop-blur-md text-secondary hover:text-white hover:border-white/30 transition-all duration-150 cursor-pointer z-20"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="m-4 sm:m-6 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-black p-6">
+          <Cover project={project} />
         </div>
 
-        {/* Modal Content with Custom Scrollbar */}
-        <div className="p-6 sm:p-8 space-y-5 overflow-y-auto">
-          <div className="space-y-1.5 border-b border-white/[0.08] pb-4">
+        <div className="space-y-6 px-5 pb-8 sm:px-8 sm:pb-10">
+          <div className="space-y-2">
             {project.date && (
-              <p className="text-xs font-semibold text-accent uppercase tracking-wider">
-                {project.date}
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{project.date}</p>
             )}
-            <h2 className="text-2xl sm:text-3xl font-semibold text-primary tracking-tight">
+            <h2 id={titleId} className="text-2xl sm:text-3xl font-semibold tracking-tight text-primary">
               {project.title}
             </h2>
           </div>
 
-          <div className="text-secondary text-sm sm:text-base leading-relaxed space-y-4 [&_h4]:text-primary [&_h4]:font-semibold [&_h4]:text-base [&_h4]:mt-4">
-            {project.description && (
-              <p className="text-secondary leading-relaxed">{project.description}</p>
-            )}
-            {project.sections?.map((section, i) => (
-              <div key={i} className="space-y-1 pt-2">
-                <h4 className="font-semibold text-primary text-base">{section.heading}</h4>
-                <p className="text-secondary text-sm leading-relaxed">{section.body}</p>
-              </div>
-            ))}
-            {project.children}
-          </div>
+          <Tags project={project} details={details} />
+
+          {about && <p className="text-base leading-relaxed text-secondary">{about}</p>}
+
+          {other.map((s, i) => (
+            <div key={i} className="space-y-1.5">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{s.heading}</h3>
+              <p className="text-sm leading-relaxed text-secondary">{s.body}</p>
+            </div>
+          ))}
+
+          {team.length > 0 && (
+            <dl className="grid gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-2">
+              {team.map((s, i) => (
+                <div key={i} className="space-y-1.5">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{s.heading}</dt>
+                  <dd className="text-sm leading-relaxed text-primary">{s.body?.trim()}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <Links details={details} size="lg" />
         </div>
+
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-6 right-6 sm:top-8 sm:right-8 w-9 h-9 flex items-center justify-center rounded-full border border-white/15 bg-black/60 backdrop-blur text-secondary hover:text-white hover:border-accent/50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </motion.div>
     </motion.div>,
     document.body
   )
 }
 
-const ProjectCard = ({ title, date, image, children, className, index = 0, onClick }) => {
-  const [internalActive, setInternalActive] = useState(false)
+/* ─────────────────────────── Card ─────────────────────────── */
 
-  const handleClick = () => {
-    if (onClick) {
-      onClick()
-    } else {
-      setInternalActive(true)
-    }
-  }
+export default function ProjectCard({ project, details, featured = false, onOpen }) {
+  const { about } = splitSections(project.sections)
 
   return (
-    <>
-      {/* Collapsed Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.45, delay: index * 0.06 }}
-        className="group h-full"
+    <article
+      {...spotlightHandlers}
+      className={`group spotlight spotlight-border relative flex h-full overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#18181b] to-[#111113]
+        shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_30px_60px_-30px_rgba(0,0,0,0.8)]
+        transition-[translate,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-white/15
+        hover:shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_30px_60px_-24px_rgba(0,0,0,0.9),0_0_40px_-16px_rgba(254,178,58,0.45)]
+        ${featured ? "flex-col md:flex-row" : "flex-col"}`}
+    >
+      {/* Image */}
+      <div
+        className={`relative shrink-0 overflow-hidden bg-black ${
+          featured ? "aspect-[16/10] md:aspect-auto md:w-1/2 md:min-h-80 border-b md:border-b-0 md:border-r" : "aspect-[16/10] border-b"
+        } border-white/[0.06]`}
       >
-        <div
-          onClick={handleClick}
-          className={`tech-card flex flex-col h-full overflow-hidden cursor-pointer hover:border-accent/60 hover:shadow-[0_0_28px_rgba(254,178,58,0.25)] hover:-translate-y-1 transition-all duration-300 ${className || ""}`}
-        >
-          {/* Cover Image */}
-          <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-white/[0.02]">
-            {image ? (
-              <img
-                src={image}
-                alt={title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-accent/20 via-[#1a1a1c] to-background flex items-center justify-center">
-                <Code2 className="w-12 h-12 text-accent/40" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0e] via-black/20 to-transparent" />
-          </div>
-
-          {/* Card Body */}
-          <div className="p-5 flex flex-col flex-grow justify-between space-y-3">
-            <div className="space-y-1.5">
-              {date && (
-                <p className="text-xs font-semibold text-accent uppercase tracking-wider">
-                  {date}
-                </p>
-              )}
-              <h3 className="text-lg font-semibold text-primary group-hover:text-accent transition-colors leading-snug">
-                {title}
-              </h3>
-            </div>
-          </div>
+        <div className="absolute inset-0 p-6 sm:p-8">
+          <Cover project={project} className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
         </div>
-      </motion.div>
+      </div>
 
-      {/* Standalone Modal fallback if onClick is not provided */}
-      {!onClick && (
-        <AnimatePresence>
-          {internalActive && (
-            <ProjectModal
-              project={{ title, date, image, children }}
-              onClose={() => setInternalActive(false)}
-            />
-          )}
-        </AnimatePresence>
-      )}
-    </>
+      {/* Body */}
+      <div className={`flex flex-1 flex-col gap-3 p-6 sm:p-7 ${featured ? "md:justify-center" : ""}`}>
+        {project.date && (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">{project.date}</p>
+        )}
+        <h3 className={`font-semibold leading-snug text-primary ${featured ? "text-2xl" : "text-xl"}`}>{project.title}</h3>
+        {about && (
+          <p className={`text-sm leading-relaxed text-secondary ${featured ? "line-clamp-2" : "line-clamp-1"}`}>{about}</p>
+        )}
+        <div className="pt-1">
+          <Tags project={project} details={details} />
+        </div>
+
+        {/* Links + details affordance, pinned to the bottom */}
+        <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-4">
+          <Links details={details} />
+          <span className="pointer-events-none ml-auto inline-flex items-center gap-1 text-xs font-medium text-secondary transition-colors group-hover:text-accent">
+            Details <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+
+      {/* Whole card opens the details modal; links above stay clickable */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open ${project.title} details`}
+        className="absolute inset-0 z-0 cursor-pointer rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
+      />
+    </article>
   )
 }
-
-export default ProjectCard

@@ -6,7 +6,6 @@ import Erika_Nelson from "../img/ErikaNelson.png";
 import Hilary_Rojas_Rosales from "../img/HilaryRojasRosales .png";
 import Jack_Hunter from "../img/JackHunter.png"
 import Ryan_Gallego from "../img/RyanGallego.png";
-import Shahida_Chowdhury from "../img/ShahidaChowdhury.png";
 
 export default{
     David_Ponce,
@@ -17,5 +16,4 @@ export default{
     Hilary_Rojas_Rosales,
     Jack_Hunter,
     Ryan_Gallego,
-    Shahida_Chowdhury,
 }

@@ -4,9 +4,13 @@ import { motion } from 'framer-motion'
 import Hero from '../components/Hero'
 import RadialOrbitalTimeline from '../components/Radial-orbital-timeline'
 import { icons, ArrowRight, Code } from 'lucide-react'
-import { TextEffect } from '../components/Text'
 import Constellation from '../components/Constellation'
+import OSWindow from '../components/os/OSWindow'
+import GradientBanner from '../components/os/GradientBanner'
+import Taskbar from '../components/os/Taskbar'
+import { Reveal } from '../components/Interactive'
 import { client } from '../sanityClient'
+import LoadError from '../components/LoadError'
 
 // Smart dynamic icon resolver: access ANY Lucide icon by name without manual imports
 const getTrackIcon = (name) => {
@@ -19,6 +23,7 @@ function Home() {
   const heroRef = useRef(null)
   const [tracks, setTracks] = useState([])
   const [loadingTracks, setLoadingTracks] = useState(true)
+  const [tracksError, setTracksError] = useState(false)
 
   useEffect(() => {
     const fetchTracks = async () => {
@@ -48,6 +53,7 @@ function Home() {
         }
       } catch (err) {
         console.error('Failed to fetch project tracks from Sanity:', err)
+        setTracksError(true)
       } finally {
         setLoadingTracks(false)
       }
@@ -57,7 +63,7 @@ function Home() {
   }, [])
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Constellation />
       
       <div className="relative z-10 text-primary">
@@ -65,63 +71,42 @@ function Home() {
           <Hero />
         </div>
 
-        {/* Get Involved Section */}
-        <section className="px-6 py-20 text-center max-w-4xl mx-auto space-y-6">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-            className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent mb-2"
+        {/* Get Involved Section (first section in the 2026-2027 OS design language) */}
+        <section className="screen-section px-4 sm:px-6 max-w-5xl mx-auto">
+          <OSWindow
+            tab="StackHacks / Community"
+            title="join_the_community.exe"
+            footer={<Taskbar />}
+            bodyClassName="px-6 py-16 sm:px-14 sm:py-20 text-center space-y-7"
           >
-            Join Our Community
-          </motion.p>
+            <GradientBanner size="sm">2026 - 2027</GradientBanner>
 
-          <TextEffect
-            as="h2"
-            per="word"
-            preset="slide"
-            inView
-            className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary"
-          >
-            Built for creators, hackers, and leaders.
-          </TextEffect>
+            <Reveal as="h2" className="display-heading text-3xl sm:text-5xl lg:text-6xl">
+              Built for creators, hackers, and leaders.
+            </Reveal>
 
-          <TextEffect
-            as="p"
-            per="word"
-            preset="fade"
-            inView
-            delay={0.2}
-            className="mx-auto max-w-2xl text-base sm:text-lg text-secondary leading-relaxed"
-          >
-            We are a project-oriented engineering collective where you collaborate on real production code, learn high-demand tech stacks, and network with driven peers.
-          </TextEffect>
+            <p className="mx-auto max-w-2xl text-base sm:text-lg text-secondary leading-relaxed">
+              We are a project-oriented engineering collective where you collaborate on real production code, learn high-demand tech stacks, and network with driven peers.
+            </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-            className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link to="/events" className="btn-primary">
-              <span>View Upcoming Events</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link to="/projects" className="btn-secondary">
-              <span>Explore Projects</span>
-            </Link>
-          </motion.div>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/events" className="btn-primary">
+                <span>View Upcoming Events</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link to="/projects" className="btn-secondary">
+                <span>Explore Projects</span>
+              </Link>
+            </div>
+          </OSWindow>
         </section>
 
         {/* Project Teams / Tracks Section */}
-        <section className="px-6 py-16 sm:py-20 border-t border-white/[0.08]">
+        <section className="screen-section px-6 border-t border-white/[0.08]">
           <div className="mx-auto max-w-5xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="mb-10 text-center space-y-2"
             >
@@ -138,6 +123,8 @@ function Home() {
 
             {tracks.length > 0 ? (
               <RadialOrbitalTimeline timelineData={tracks} />
+            ) : tracksError ? (
+              <LoadError what="the project tracks" className="my-10" />
             ) : loadingTracks ? (
               <div className="py-24 text-center text-sm text-secondary/60">
                 Loading active tracks...
