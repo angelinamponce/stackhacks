@@ -26,7 +26,7 @@ export default function Taskbar({ items = DEFAULT_ITEMS, status, className = '' 
       </nav>
 
       <Link to="/" aria-label="StackHacks home" className="group relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-gold shadow-[var(--shadow-glow-sm)] transition-shadow duration-300 hover:shadow-[var(--shadow-glow)]">
-        <img src="/SHTrans.png" alt="" className="h-6 w-6 object-contain" />
+        <img src={`${import.meta.env.BASE_URL}SHTrans.png`} alt="" className="h-6 w-6 object-contain" />
       </Link>
 
       <div className="flex items-center justify-end gap-3 text-gold">

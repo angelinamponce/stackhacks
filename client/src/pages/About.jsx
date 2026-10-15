@@ -50,7 +50,7 @@ const fallbackAbout = [
     title: "About Us",
     subtitle: "Who We Are",
     text: "StackHacks is a project-driven computer science club at Binghamton University's Thomas J. Watson College of Engineering and Applied Science. We welcome members of all backgrounds and experience levels, creating an collaborative space where everyone learns, builds, and grows together.",
-    image: "/SH.png"
+    image: `${import.meta.env.BASE_URL}SH.png`
   }
 ]
 

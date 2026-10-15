@@ -133,7 +133,7 @@ export default function Hero() {
             <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
             <img
               className="landing-logo relative w-auto object-contain drop-shadow-[0_20px_50px_rgba(254,178,58,0.15)]"
-              src="/SHTrans.png"
+              src={`${import.meta.env.BASE_URL}SHTrans.png`}
               alt="StackHacks Emblem"
             />
           </div>

@@ -17,7 +17,8 @@ try {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* Match the deploy base path (e.g. /stackhacks on GitHub Pages; empty locally) */}
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <App />
     </BrowserRouter>
   </StrictMode>
