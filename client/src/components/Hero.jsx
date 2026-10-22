@@ -6,8 +6,8 @@ import { fetchCompanies } from '../lib/companies'
 import LoadError from './LoadError'
 import { useIntroDone } from '../lib/intro'
 
-function LogoMarquee({ items, duration = 45 }) {
-  // Render the list twice so translating by -50% loops seamlessly.
+function LogoMarquee({ items, duration = 80 }) {
+  // Render the list twice so translating by 50% loops seamlessly; it drifts slowly left to right.
   const loop = [...items, ...items]
 
   return (
@@ -19,22 +19,17 @@ function LogoMarquee({ items, duration = 45 }) {
       }}
     >
       <ul
-        className="marquee-track flex w-max items-center gap-[clamp(14px,1.6vw,28px)]"
+        className="marquee-track marquee-track--ltr flex w-max items-center gap-[clamp(40px,4vw,64px)] pr-[clamp(40px,4vw,64px)]"
         style={{ '--marquee-duration': `${duration}s` }}
       >
         {loop.map((company, i) => (
-          <li
-            key={`${company._id}-${i}`}
-            aria-hidden={i >= items.length}
-            style={{ '--breathe-delay': `${-((i * 0.7) % 4.5).toFixed(2)}s` }}
-            className="strip-chip group relative flex shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-gradient-to-b from-white/[0.06] to-white/[0.015]"
-          >
-            <span className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(120px_circle_at_50%_0%,rgba(254,178,58,0.18),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          <li key={`${company._id}-${i}`} aria-hidden={i >= items.length} className="strip-item flex shrink-0 items-center justify-center">
             <img
-              className="strip-logo relative object-contain transition-[opacity,transform] duration-500 group-hover:scale-105"
+              className="strip-logo"
               src={company.image}
               alt={i < items.length ? `${company.title} logo` : ''}
-              loading="lazy"
+              // Eager: lazy logos would change the track width mid-scroll and make the loop jump
+              loading="eager"
               decoding="async"
             />
           </li>
@@ -74,14 +69,15 @@ export default function Hero() {
       {/* Hero Content Section */}
       <div data-circuit-hero className="landing-hero relative flex flex-1 min-h-0 items-center border-b border-white/[0.08]">
         <div className="relative mx-auto flex w-full max-w-6xl flex-col px-6 lg:block">
-          <div className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
+          {/* The background network fades out behind this column (data-network-clear) */}
+          <div data-network-clear className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
 
             {/* Clean Typographic Eyebrow */}
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={enter}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent landing-eyebrow"
+              className="landing-eyebrow text-[11px] sm:text-xs font-medium tracking-[0.28em] uppercase text-accent/90"
             >
               Binghamton University &middot; Student Tech Collective
             </motion.p>
@@ -100,7 +96,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 24 }}
               animate={enter}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="landing-copy max-w-xl text-secondary text-base sm:text-lg leading-relaxed"
+              className="landing-copy mx-auto max-w-[560px] lg:mx-0 text-secondary text-base sm:text-[17px] leading-[1.7]"
             >
               Build engineering projects with real-world impact while receiving hands-on mentorship, industry networking, and collaborative development at Binghamton University.
             </motion.p>
@@ -111,7 +107,7 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="landing-actions flex flex-wrap items-center justify-center lg:justify-start gap-3"
             >
-              <Link to="/about" className="btn-primary group px-5 py-2.5 sm:px-6 sm:py-3">
+              <Link to="/about" className="btn-primary group">
                 <span>About Our Club</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
@@ -120,7 +116,7 @@ export default function Hero() {
                 href="https://www.instagram.com/stackhacksbu/?hl=en"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary group px-5 py-2.5 sm:px-6 sm:py-3"
+                className="btn-secondary group"
               >
                 <span>Latest Updates</span>
                 <ArrowUpRight className="w-4 h-4 opacity-70 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
@@ -130,9 +126,10 @@ export default function Hero() {
 
           {/* Right Hero Visual: Ambient Glow + Logo */}
           <div className="landing-visual order-first lg:order-last lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 flex items-center justify-center pointer-events-none">
-            <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
+            {/* The page's single glow: a soft gold radial behind the logo */}
+            <div className="absolute w-64 h-64 sm:w-80 sm:h-80 bg-accent/10 rounded-full blur-[90px] pointer-events-none" />
             <img
-              className="landing-logo relative w-auto object-contain drop-shadow-[0_20px_50px_rgba(254,178,58,0.15)]"
+              className="landing-logo relative w-auto object-contain"
               src={`${import.meta.env.BASE_URL}SHTrans.png`}
               alt="StackHacks Emblem"
             />
@@ -148,31 +145,25 @@ export default function Hero() {
             next?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
           }}
           aria-label="Scroll to the next section"
-          className="scroll-cue group absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 rounded-full px-3 py-1 text-accent/80 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 cursor-pointer"
+          className="scroll-cue absolute left-1/2 -translate-x-1/2 rounded-full p-1.5 text-secondary/60 transition-colors duration-300 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 cursor-pointer"
         >
-          <span className="scroll-cue-line block h-4 sm:h-6 w-px bg-gradient-to-b from-transparent to-accent" />
-          <ChevronDown className="scroll-cue-chevron h-4 w-4" />
+          <ChevronDown className="h-4 w-4" />
         </button>
       </div>
 
       {/* Professional Experience Logos Marquee */}
-      <div data-circuit-section className="landing-strip relative shrink-0">
-        {/* Soft gold glow behind the strip, and gold hairlines (with a travelling light) above and below */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 inset-y-2 bg-[radial-gradient(ellipse_at_center,rgba(254,178,58,0.13),transparent_70%)] blur-2xl" />
-        {['top-0', 'bottom-0'].map((pos) => (
-          <span key={pos} aria-hidden="true" className={`strip-hairline pointer-events-none absolute inset-x-0 ${pos}`}>
-            <span className="strip-hairline-pulse" />
-          </span>
-        ))}
+      {/* data-circuit-avoid keeps the page circuits out of the strip; data-network-clear keeps the background network out */}
+      <div data-circuit-section data-circuit-avoid data-network-clear className="landing-strip relative shrink-0">
+        {/* Static gold hairline above the strip */}
+        <span aria-hidden="true" className="strip-hairline pointer-events-none absolute inset-x-0 top-0" />
         <div className="relative max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center gap-[clamp(8px,1.4svh,14px)] md:gap-8">
-            <div className="md:max-w-52 md:border-r border-accent/20 md:pr-8 shrink-0 text-center md:text-right">
-              <span className="strip-label inline-flex items-center gap-3 text-sm sm:text-[15px] uppercase tracking-[0.3em] text-primary/90 font-semibold leading-relaxed">
-                <span aria-hidden="true" className="h-px w-8 shrink-0 bg-gradient-to-r from-transparent to-accent md:hidden" />
+          <div className="flex flex-col md:flex-row items-center gap-[clamp(8px,1.4svh,14px)] md:gap-7">
+            <div className="shrink-0 text-center md:border-r md:border-white/10 md:pr-7 md:text-left">
+              <span className="strip-label inline-flex max-w-[16rem] items-center justify-center gap-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.26em] text-primary/85 md:max-w-none md:whitespace-nowrap">
+                <span aria-hidden="true" className="h-px w-6 shrink-0 bg-gradient-to-r from-transparent to-accent/70 md:hidden" />
                 <span>Our Professional Experience</span>
-                <span aria-hidden="true" className="h-px w-8 shrink-0 bg-gradient-to-l from-transparent to-accent md:hidden" />
+                <span aria-hidden="true" className="h-px w-6 shrink-0 bg-gradient-to-l from-transparent to-accent/70 md:hidden" />
               </span>
-              <span aria-hidden="true" className="mt-3 ml-auto hidden h-px w-12 bg-gradient-to-l from-accent to-transparent md:block" />
             </div>
 
             {!loading && companies.length > 0 && <LogoMarquee items={companies} />}

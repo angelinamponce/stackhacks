@@ -124,3 +124,27 @@ export function SpinePulses({ d, length, speed = 420, every = 1.6, tail = true, 
     )
   })
 }
+
+/**
+ * One slow, soft pulse along a trace (pathLength=100): a short blurred glow with a long fading
+ * tail. It eases along the line over `travel` seconds, then rests for `pause` seconds, so pulses
+ * stay rare and never sync up. Per-pulse keyframes let the travel/pause split differ per trace;
+ * the .soft-pulse class pauses offscreen / in hidden tabs and is hidden for reduced motion.
+ */
+export function SoftPulse({ id, d, travel = 10, pause = 15, delay = 0, width = 1, blurId = 'soft-pulse-blur' }) {
+  const total = travel + pause
+  const pct = (sec) => `${((sec / total) * 100).toFixed(2)}%`
+  const frames = (from, to) =>
+    `0%{stroke-dashoffset:${from};opacity:0;animation-timing-function:cubic-bezier(0.45,0,0.55,1)}` +
+    `${pct(travel * 0.2)}{opacity:1}${pct(travel * 0.75)}{opacity:1}` +
+    `${pct(travel)}{stroke-dashoffset:${to};opacity:0}100%{stroke-dashoffset:${to};opacity:0}`
+  const css = `@keyframes ${id}-h{${frames(6, -100)}}@keyframes ${id}-t{${frames(34, -72)}}`
+  const anim = (k) => ({ animation: `${id}-${k} ${total.toFixed(2)}s linear ${delay.toFixed(2)}s infinite both` })
+  return (
+    <g filter={`url(#${blurId})`}>
+      <style>{css}</style>
+      <path className="soft-pulse" d={d} pathLength="100" stroke={TRACE_GOLD} strokeWidth={width + 0.6} strokeOpacity="0.3" strokeLinecap="round" fill="none" strokeDasharray="34 300" style={anim('t')} />
+      <path className="soft-pulse soft-pulse-head" d={d} pathLength="100" stroke={TRACE_LIGHT} strokeWidth={width + 1} strokeOpacity="0.6" strokeLinecap="round" fill="none" strokeDasharray="6 300" style={anim('h')} />
+    </g>
+  )
+}

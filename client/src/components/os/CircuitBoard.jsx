@@ -1,62 +1,67 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useReducedMotion } from 'framer-motion'
-import { GlowNode, PulseTrain, RingNode, SpinePulses, TraceLine, TracePulse, TRACE_GOLD, TRACE_LIGHT } from './CircuitParts'
+import { GlowNode, RingNode, SoftPulse, TRACE_GOLD } from './CircuitParts'
 import { buildBoard, measurePage } from '../../lib/circuitLayout'
 
 const modeFor = (w) => (w < 768 ? 'minimal' : w < 1024 ? 'medium' : 'full')
-const LINE = 1.5 // matches the rendered stroke of the reference corners (2px at 180/240 scale)
+const LINE = 1 // one thin stroke weight everywhere
+// Base opacities: a sparse, faint accent. The spine is never brighter than the branches.
+const BRANCH_OPACITY = 0.16
+const HERO_BRANCH_OPACITY = 0.1
+const SPINE_OPACITY = 0.08
+const SPINE_LIT_OPACITY = 0.15
+const RING_OPACITY = 0.25
+const SPINE_FADE = 90 // px of fade at each end of a spine run
 
-function BoardShapes({ board, mode, highlight = false }) {
-  const color = highlight ? TRACE_LIGHT : TRACE_GOLD
+/**
+ * Gradient for one branch line: faint where it leaves the spine, full in the middle, fading out
+ * completely at its outer end so it tapers into the background before reaching content.
+ */
+function BranchGradient({ id, span: [[x1, y1], [x2, y2]] }) {
   return (
-    <>
-      {board.spines.map((s) => (
-        <TraceLine key={s.side} d={s.d} width={LINE} opacity={highlight ? 0.9 : 0.22} color={color} />
-      ))}
-      {board.branches.map((b, i) => (
-        <g key={i} data-branch={i} data-anchor={b.anchor || undefined}>
-          {b.lines.map((d, k) => (
-            <TraceLine key={k} d={d} width={LINE} opacity={highlight ? 0.95 : 0.45} color={color} />
-          ))}
-          {!highlight && b.hero && b.pulse && <TracePulse d={b.lines[0]} width={2} delay={b.pulseDelay} duration={b.pulseDuration} />}
-          {!highlight && b.trains && b.lines.map((d, k) => (
-            // Medium screens get a lighter version: one pulse per line, no tails
-            <PulseTrain
-              key={`p${k}`}
-              d={d}
-              width={1.5}
-              count={mode === 'full' ? b.trains[k].count : 1}
-              duration={b.trains[k].dur}
-              offset={b.trains[k].offset}
-              tail={mode === 'full'}
-            />
-          ))}
-          {b.rings.map(([x, y], k) => (
-            <RingNode key={k} x={x} y={y} r={4} width={LINE} opacity={highlight ? 1 : 0.7} color={color} />
-          ))}
-          {b.glows.map(([x, y], k) => (
-            <GlowNode key={k} x={x} y={y} scale={0.9} animated={false} className={b.anchor ? 'anchor-glow' : 'board-soft-glow'} />
-          ))}
-          {highlight && b.rings.map(([x, y], k) => <GlowNode key={`h${k}`} x={x} y={y} scale={1.1} animated={false} />)}
-        </g>
-      ))}
-    </>
+    <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x1} y1={y1} x2={x2} y2={y2}>
+      <stop offset="0" stopColor={TRACE_GOLD} stopOpacity="0.35" />
+      <stop offset="0.25" stopColor={TRACE_GOLD} stopOpacity="1" />
+      <stop offset="0.7" stopColor={TRACE_GOLD} stopOpacity="1" />
+      <stop offset="1" stopColor={TRACE_GOLD} stopOpacity="0" />
+    </linearGradient>
+  )
+}
+
+/** White-in-the-middle vertical mask for each spine run, so the spine fades at every run end. */
+function SpineMask({ id, spine, W }) {
+  return (
+    <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height="100%">
+      {spine.fades.map(({ y0, y1 }, k) => {
+        const h = Math.max(1, y1 - y0)
+        const f = Math.min(0.45, SPINE_FADE / h)
+        return (
+          <g key={k}>
+            <linearGradient id={`${id}-g${k}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#fff" stopOpacity="0" />
+              <stop offset={f} stopColor="#fff" stopOpacity="1" />
+              <stop offset={1 - f} stopColor="#fff" stopOpacity="1" />
+              <stop offset="1" stopColor="#fff" stopOpacity="0" />
+            </linearGradient>
+            <rect x="0" y={y0} width={W} height={h} fill={`url(#${id}-g${k})`} />
+          </g>
+        )
+      })}
+    </mask>
   )
 }
 
 /**
  * One continuous, page-level circuit board behind all content (mounted once in App).
- * Spines run down both margins through every section, branches fork toward the content
- * and stop short of it (see lib/circuitLayout). Scroll lights the spine progressively,
- * section nodes light as they're reached, and nodes near the cursor brighten.
+ * A single faint spine runs down each margin; sparse branches fork toward the content and fade
+ * out before reaching it (see lib/circuitLayout). Scroll draws the spine in with eased, damped
+ * motion; a few branches carry one slow, soft pulse each.
  */
 export default function CircuitBoard() {
   const wrapRef = useRef(null)
   const litRefs = useRef([])
-  const headRefs = useRef([])
   const [board, setBoard] = useState(null)
-  const [mode, setMode] = useState(() => (typeof window === 'undefined' ? 'full' : modeFor(window.innerWidth)))
   const reduce = useReducedMotion()
   const { pathname } = useLocation()
 
@@ -68,11 +73,7 @@ export default function CircuitBoard() {
     let timer = 0
     const rebuild = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => {
-        const m = modeFor(window.innerWidth)
-        setMode(m)
-        setBoard(buildBoard(measurePage(root, wrap), m))
-      }, 180)
+      timer = setTimeout(() => setBoard(buildBoard(measurePage(root, wrap), modeFor(window.innerWidth))), 180)
     }
     const ro = new ResizeObserver(rebuild)
     ro.observe(root)
@@ -88,12 +89,12 @@ export default function CircuitBoard() {
     }
   }, [pathname])
 
-  // Scroll-linked lighting: lit spine, travelling head pulse, section nodes, in-view anchors, offscreen pause
+  // Scroll-linked spine draw (eased and damped, never snapping), in-view anchors, offscreen pause
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap || !board) return
 
-    // y -> length lookup for each spine, so the lit portion follows the scroll position
+    // y -> length lookup for each spine, so the drawn portion follows the scroll position
     const tables = litRefs.current.map((path) => {
       if (!path) return null
       const total = path.getTotalLength()
@@ -101,7 +102,7 @@ export default function CircuitBoard() {
       const rows = []
       for (let l = 0; l <= total; l += 16) rows.push([path.getPointAtLength(l).y, l])
       rows.push([path.getPointAtLength(total).y, total])
-      return { path, total, rows }
+      return { path, total, rows, cur: 0 }
     })
     const lengthAtY = ({ rows }, y) => {
       let lo = 0, hi = rows.length - 1
@@ -109,29 +110,14 @@ export default function CircuitBoard() {
       return rows[lo][1]
     }
 
-    const nodes = [...wrap.querySelectorAll('[data-node-y]')]
     const branches = [...wrap.querySelectorAll('svg.board-base [data-branch]')]
     let frame = 0
 
-    const update = () => {
-      frame = 0
+    // Visibility state (which branches animate, which anchors breathe) follows the scroll directly
+    const updateVisibility = () => {
       const top = wrap.getBoundingClientRect().top
       const vh = window.innerHeight
-      const head = vh * 0.6 - top // scroll head in board coordinates
       const viewTop = -top - 200, viewBottom = -top + vh + 200
-
-      tables.forEach((t, i) => {
-        if (!t) return
-        const len = reduce ? t.total : lengthAtY(t, head)
-        t.path.style.strokeDashoffset = String(t.total - len)
-        const h = headRefs.current[i]
-        if (h) {
-          const pt = t.path.getPointAtLength(len)
-          h.style.transform = `translate(${pt.x}px, ${pt.y}px)`
-          h.style.opacity = reduce || len >= t.total - 1 ? '0' : '1'
-        }
-      })
-      nodes.forEach((n) => n.toggleAttribute('data-lit', reduce || Number(n.dataset.nodeY) <= head))
       branches.forEach((g) => {
         const b = board.branches[Number(g.dataset.branch)]
         const onScreen = b.y1 > viewTop && b.y0 < viewBottom
@@ -139,8 +125,28 @@ export default function CircuitBoard() {
         if (b.anchor) g.toggleAttribute('data-inview', b.y0 > -top && b.y1 < -top + vh)
       })
     }
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
-    update()
+
+    // The drawn spine eases toward its target length each frame (damped), then stops
+    const tick = () => {
+      frame = 0
+      const top = wrap.getBoundingClientRect().top
+      const head = window.innerHeight * 0.6 - top // scroll head in board coordinates
+      let moving = false
+      tables.forEach((t) => {
+        if (!t) return
+        const target = reduce ? t.total : lengthAtY(t, head)
+        const delta = target - t.cur
+        t.cur = reduce || Math.abs(delta) < 0.5 ? target : t.cur + delta * 0.08
+        if (t.cur !== target) moving = true
+        t.path.style.strokeDashoffset = String(t.total - t.cur)
+      })
+      if (moving) frame = requestAnimationFrame(tick)
+    }
+    const onScroll = () => {
+      updateVisibility()
+      if (!frame) frame = requestAnimationFrame(tick)
+    }
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     return () => {
@@ -150,84 +156,72 @@ export default function CircuitBoard() {
     }
   }, [board, reduce])
 
-  // Cursor proximity glow (mouse only, not on the minimal phone layout)
-  const cursor = mode !== 'minimal'
-  useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap || !cursor || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
-    let frame = 0
-    const onMove = (e) => {
-      if (e.pointerType !== 'mouse') return
-      const { clientX, clientY } = e
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => {
-        const r = wrap.getBoundingClientRect()
-        wrap.style.setProperty('--cx', `${clientX - r.left}px`)
-        wrap.style.setProperty('--cy', `${clientY - r.top}px`)
-        wrap.style.setProperty('--glow-on', '1')
-      })
-    }
-    const onLeave = () => wrap.style.setProperty('--glow-on', '0')
-    window.addEventListener('pointermove', onMove, { passive: true })
-    document.documentElement.addEventListener('pointerleave', onLeave)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('pointermove', onMove)
-      document.documentElement.removeEventListener('pointerleave', onLeave)
-    }
-  }, [cursor])
-
   return (
     <div ref={wrapRef} aria-hidden="true" className="circuit-board pointer-events-none absolute inset-0 z-0 overflow-hidden">
       {board && (
-        <>
-          <svg className="board-base absolute left-0 top-0" width={board.W} height={board.H} fill="none">
-            <BoardShapes board={board} mode={mode} />
+        <svg className="board-base absolute left-0 top-0" width={board.W} height={board.H} fill="none">
+          <defs>
+            {/* Softens the pulses into a glow */}
+            <filter id="soft-pulse-blur" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.2" />
+            </filter>
+            {board.spines.map((s) => <SpineMask key={s.side} id={`spine-fade-${s.side}`} spine={s} W={board.W} />)}
+            {board.branches.map((b, i) => b.spans.map((span, k) => <BranchGradient key={`${i}-${k}`} id={`branch-${i}-${k}`} span={span} />))}
+          </defs>
 
-            {/* Lit spine: drawn progressively with scroll, with a soft wide glow underneath */}
-            {board.spines.map((s, i) => (
-              <g key={s.side}>
-                <path d={s.d} stroke={TRACE_GOLD} strokeWidth="5" strokeOpacity="0.08" strokeLinecap="round" fill="none" />
-                <path
-                  ref={(el) => { litRefs.current[i] = el }}
-                  className="board-lit"
-                  d={s.d}
-                  stroke={TRACE_GOLD}
-                  strokeWidth={LINE}
-                  strokeOpacity="0.8"
-                  strokeLinecap="round"
-                  fill="none"
-                  style={{ strokeDasharray: '100000', strokeDashoffset: '100000' }}
-                />
-                {/* Continuous pulses running down the spine */}
-                <SpinePulses d={s.d} length={s.length} width={1.5} tail={mode !== 'minimal'} every={mode === 'minimal' ? 2.4 : 1.6} />
-                <g ref={(el) => { headRefs.current[i] = el }} className="board-head">
-                  <circle r="9" fill={TRACE_GOLD} fillOpacity="0.22" />
-                  <circle r="2.5" fill={TRACE_LIGHT} />
-                </g>
-              </g>
-            ))}
+          {/* Spine: one very faint line per margin, with a slightly brighter scroll-drawn copy */}
+          {board.spines.map((s, i) => (
+            <g key={s.side} mask={`url(#spine-fade-${s.side})`}>
+              <path d={s.d} stroke={TRACE_GOLD} strokeWidth={LINE} strokeOpacity={SPINE_OPACITY} strokeLinecap="round" fill="none" />
+              <path
+                ref={(el) => { litRefs.current[i] = el }}
+                mask={board.heroZone ? 'url(#board-calm-hero)' : undefined}
+                d={s.d}
+                stroke={TRACE_GOLD}
+                strokeWidth={LINE}
+                strokeOpacity={SPINE_LIT_OPACITY}
+                strokeLinecap="round"
+                fill="none"
+                style={{ strokeDasharray: '100000', strokeDashoffset: '100000' }}
+              />
+            </g>
+          ))}
 
-            {/* Section nodes on the spines */}
-            {board.spineNodes.map((n, i) => (
-              <g key={i} data-node-y={n.y} className="board-node">
-                <RingNode x={n.x} y={n.y} r={4.5} width={LINE} opacity={0.75} />
-                <g className="board-node-glow">
-                  <GlowNode x={n.x} y={n.y} scale={0.9} animated={false} />
-                </g>
-              </g>
-            ))}
-          </svg>
-
-          {cursor && (
-            <svg className="circuit-board-glow absolute left-0 top-0" width={board.W} height={board.H} fill="none">
-              <BoardShapes board={board} mode={mode} highlight />
-              {board.spineNodes.map((n, i) => (
-                <GlowNode key={i} x={n.x} y={n.y} scale={1.1} animated={false} />
-              ))}
-            </svg>
+          {/* Keeps the scroll-drawn spine out of the calm landing hero (home page only) */}
+          {board.heroZone && (
+            <mask id="board-calm-hero" maskUnits="userSpaceOnUse" x="0" y="0" width={board.W} height={board.H}>
+              <rect width={board.W} height={board.H} fill="white" />
+              <rect y={board.heroZone.top} width={board.W} height={board.heroZone.bottom - board.heroZone.top} fill="black" />
+            </mask>
           )}
-        </>
+
+          {/* Branches: gradient-faded traces, one ring each, rare soft glows and pulses */}
+          {board.branches.map((b, i) => (
+            <g key={i} data-branch={i} data-anchor={b.anchor || undefined}>
+              {b.lines.map((d, k) => (
+                <path
+                  key={k}
+                  className="circuit-trace"
+                  d={d}
+                  pathLength="100"
+                  stroke={`url(#branch-${i}-${k})`}
+                  strokeWidth={LINE}
+                  strokeOpacity={b.hero ? HERO_BRANCH_OPACITY : BRANCH_OPACITY}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              ))}
+              {b.pulse && <SoftPulse id={`sp${i}`} d={b.lines[0]} travel={b.pulse.travel} pause={b.pulse.pause} delay={b.pulse.delay} width={LINE} />}
+              {b.rings.map(([x, y], k) => (
+                <RingNode key={k} x={x} y={y} r={3} width={LINE} opacity={RING_OPACITY} />
+              ))}
+              {b.glows.map(([x, y], k) => (
+                <GlowNode key={k} x={x} y={y} scale={0.75} animated={false} className={b.anchor ? 'anchor-glow' : 'board-soft-glow'} />
+              ))}
+            </g>
+          ))}
+        </svg>
       )}
     </div>
   )

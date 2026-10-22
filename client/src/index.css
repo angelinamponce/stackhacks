@@ -275,9 +275,10 @@
   from { stroke-dashoffset: 100; }
   to   { stroke-dashoffset: -100; }
 }
+/* Very gentle breathing: under 15% opacity change, on a slow cycle */
 @keyframes node-glow {
-  0%, 100% { opacity: 0.25; }
-  50%      { opacity: 1; }
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.66; }
 }
 @keyframes circuit-draw {
   from { stroke-dashoffset: 100; }
@@ -310,7 +311,7 @@
   animation-delay: var(--pulse-delay, 0s);
 }
 .circuit-node-glow {
-  animation: node-glow 2.8s ease-in-out infinite;
+  animation: node-glow 8s ease-in-out infinite;
   animation-delay: var(--pulse-delay, 0s);
 }
 .circuit-draw .circuit-trace {
@@ -318,7 +319,7 @@
   animation: circuit-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .circuit-pulse, .circuit-pulse-tail, .spine-pulse { display: none; }
+  .circuit-pulse, .circuit-pulse-tail, .spine-pulse, .soft-pulse { display: none; }
   .circuit-node-glow { animation: none; opacity: 0.6; }
   .circuit-draw .circuit-trace { animation: none; stroke-dasharray: none; }
 }
@@ -326,6 +327,8 @@
 /* Pause circuit animations when off-screen (set by CircuitTraces) or when the tab is hidden (set in App) */
 [data-paused] .circuit-pulse,
 [data-paused] .circuit-pulse-tail,
+[data-paused] .soft-pulse,
+:root[data-tab-hidden] .soft-pulse,
 [data-paused] .circuit-node-glow,
 :root[data-tab-hidden] .circuit-pulse,
 :root[data-tab-hidden] .circuit-pulse-tail,
@@ -339,23 +342,15 @@
   -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 8%, rgba(0, 0, 0, 0.5) 18%, transparent 30%, transparent 70%, rgba(0, 0, 0, 0.5) 82%, #000 92%, #000 100%);
   mask-image: linear-gradient(90deg, #000 0%, #000 8%, rgba(0, 0, 0, 0.5) 18%, transparent 30%, transparent 70%, rgba(0, 0, 0, 0.5) 82%, #000 92%, #000 100%);
 }
-.board-head { transition: opacity 0.4s ease; will-change: transform; }
-.board-node-glow { opacity: 0.12; transition: opacity 0.8s ease; }
-.board-node[data-lit] .board-node-glow { opacity: 1; }
-.board-soft-glow { opacity: 0.55; }
-.anchor-glow { opacity: 0.35; transition: opacity 0.8s ease; }
-[data-inview] > .anchor-glow { animation: node-glow 2.8s ease-in-out infinite; }
-[data-paused] > .anchor-glow { animation-play-state: paused; }
-/* Cursor proximity: a brighter copy of the board revealed in a soft circle around the pointer */
-.circuit-board-glow {
-  opacity: var(--glow-on, 0);
-  transition: opacity 0.4s ease;
-  -webkit-mask-image: radial-gradient(150px circle at var(--cx, -999px) var(--cy, -999px), #000 0%, rgba(0, 0, 0, 0.45) 45%, transparent 75%);
-  mask-image: radial-gradient(150px circle at var(--cx, -999px) var(--cy, -999px), #000 0%, rgba(0, 0, 0, 0.45) 45%, transparent 75%);
-}
+.board-soft-glow { opacity: 0.55; animation: node-glow 8s ease-in-out infinite; }
+.anchor-glow { opacity: 0.45; transition: opacity 1.6s ease; }
+[data-inview] > .anchor-glow { animation: node-glow 9s ease-in-out infinite; }
+[data-paused] > .anchor-glow,
+[data-paused] > .board-soft-glow,
+:root[data-tab-hidden] .board-soft-glow,
+:root[data-tab-hidden] .anchor-glow { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
-  [data-inview] > .anchor-glow { animation: none; opacity: 0.8; }
-  .board-head { display: none; }
+  .board-soft-glow, [data-inview] > .anchor-glow { animation: none; opacity: 0.55; }
 }
 
 /* ── First-visit intro (components/IntroSplash.jsx) ── */
@@ -374,16 +369,23 @@ main, .circuit-board { transition: opacity 0.7s ease; }
 }
 .landing-hero { padding-top: clamp(12px, 3svh, 40px); padding-bottom: clamp(44px, 7svh, 76px); }
 .landing-eyebrow { margin-bottom: clamp(8px, 1.8svh, 16px); }
-.landing-title { font-size: clamp(2.1rem, min(7.5vw, 7svh), 4.5rem); }
-.landing-copy { margin-top: clamp(10px, 2.2svh, 24px); }
-.landing-actions { margin-top: clamp(14px, 3.4svh, 40px); }
+.landing-title { font-size: clamp(2rem, min(6.2vw, 6.2svh), 3.9rem); }
+.landing-copy { margin-top: clamp(12px, 2.6svh, 28px); }
+.landing-actions { margin-top: clamp(18px, 4svh, 44px); }
+/* Landing buttons only: one size, the primary keeps a subtle shadow (no glow), the secondary is a plain outline */
+.landing-actions .btn-primary,
+.landing-actions .btn-secondary { min-height: 2.875rem; padding: 0 1.5rem; }
+.landing-actions .btn-primary { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 6px 16px -10px rgba(0, 0, 0, 0.8); }
+.landing-actions .btn-primary:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 10px 22px -12px rgba(0, 0, 0, 0.9); }
+.landing-actions .btn-secondary { background: transparent; backdrop-filter: none; border-color: rgba(255, 255, 255, 0.22); }
+.landing-actions .btn-secondary:hover { background: transparent; box-shadow: none; border-color: rgba(254, 178, 58, 0.55); }
 .landing-visual { margin-bottom: clamp(8px, 2.2svh, 32px); }
-.landing-logo { height: clamp(64px, 11svh, 176px); }
-@media (min-width: 640px) { .landing-logo { height: clamp(72px, 15svh, 176px); } }
-.landing-strip { padding-block: clamp(10px, 2.2svh, 32px); }
+.landing-logo { height: clamp(60px, 10svh, 160px); }
+@media (min-width: 640px) { .landing-logo { height: clamp(68px, 13svh, 160px); } }
+.landing-strip { padding-block: clamp(10px, 2svh, 26px); }
 @media (min-width: 1024px) {
   .landing-visual { margin-bottom: 0; }
-  .landing-logo { height: clamp(220px, 50svh, 460px); }
+  .landing-logo { height: clamp(200px, 42svh, 400px); }
 }
 .scroll-cue { bottom: clamp(6px, 1.4svh, 16px); }
 @keyframes scroll-cue-pulse {
@@ -432,64 +434,25 @@ main, .circuit-board { transition: opacity 0.7s ease; }
 }
 .founder-card:hover .card-shine::after { transform: translateX(120%); }
 
-/* ── "Our Professional Experience" strip (Hero.jsx): larger glowing chips ── */
-.strip-marquee { padding-block: clamp(10px, 1.7svh, 18px); }
-.strip-chip {
-  /* ~1.4-1.6x the previous 64x144-160px chips */
-  height: clamp(5.25rem, 10.2svh, 6.5rem);
-  width: clamp(12.5rem, 16vw, 17rem);
-  padding-inline: clamp(14px, 1.6vw, 26px);
-  box-shadow: 0 0 16px -8px rgba(254, 178, 58, 0.45), 0 10px 24px -16px rgba(0, 0, 0, 0.9);
-  transition: translate 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s ease, box-shadow 0.5s ease;
+/* ── "Our Professional Experience" strip (Hero.jsx): logos sit directly on the page, no box ── */
+.strip-marquee { padding-block: clamp(10px, 1.8svh, 18px); }
+/* Every logo shares one height (wide wordmarks are capped in width), vertically centred */
+.strip-item { height: clamp(2.75rem, 5.4svh, 3.5rem); }
+.strip-logo {
+  height: clamp(1.75rem, 3.6svh, 2.35rem);
+  width: auto;
+  max-width: clamp(7rem, 10vw, 9.5rem);
+  object-fit: contain;
+  opacity: 0.8;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-/* Breathing glow: an outer ring whose opacity slowly pulses (staggered per chip) */
-.strip-chip::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 22px -2px rgba(254, 178, 58, 0.5), inset 0 0 14px -6px rgba(254, 178, 58, 0.45);
-  opacity: 0.3;
-  animation: chip-breathe 4.5s ease-in-out infinite;
-  animation-delay: var(--breathe-delay, 0s);
-}
-@keyframes chip-breathe {
-  0%, 100% { opacity: 0.3; }
-  50%      { opacity: 0.75; }
-}
-.strip-chip:hover {
-  translate: 0 -4px;
-  border-color: rgba(254, 178, 58, 0.6);
-  box-shadow: 0 0 34px -6px rgba(254, 178, 58, 0.7), 0 18px 34px -18px rgba(0, 0, 0, 0.9);
-}
-.strip-chip:hover::before { opacity: 1; animation-play-state: paused; }
-.strip-logo { max-height: 54%; max-width: 80%; opacity: 0.9; }
-@media (max-width: 639px) {
-  .strip-chip { height: 5.5rem; width: 12.5rem; }
-}
-.strip-chip:hover .strip-logo { opacity: 1; }
+.strip-item:hover .strip-logo { opacity: 1; transform: scale(1.03); }
+/* This marquee drifts left to right (the shared keyframes run right to left) */
+.marquee-track--ltr { animation-direction: reverse; }
 .strip-hairline {
   height: 1px;
   overflow: hidden;
   background: linear-gradient(90deg, transparent, rgba(254, 178, 58, 0.35) 20%, rgba(254, 178, 58, 0.35) 80%, transparent);
-}
-.strip-hairline-pulse {
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  width: 18%;
-  background: linear-gradient(90deg, transparent, #ffe2a8, transparent);
-  animation: hairline-run 6s linear infinite;
-}
-.strip-hairline.bottom-0 .strip-hairline-pulse { animation-delay: -3s; animation-direction: reverse; }
-@keyframes hairline-run {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(560%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .strip-chip::before { animation: none; opacity: 0.45; }
-  .strip-hairline-pulse { display: none; }
 }
 
 /* Deep-linked project card (Projects.jsx): brief gold highlight */

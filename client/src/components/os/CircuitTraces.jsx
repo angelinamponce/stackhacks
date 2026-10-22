@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { GlowNode, RingNode, TraceLine, TracePulse } from './CircuitParts'
+import { useEffect, useId, useRef } from 'react'
+import { GlowNode, RingNode, SoftPulse, TraceLine } from './CircuitParts'
 
 // Decorative circuit-board traces anchored to the corners of a container
 // (used by the "Join the Community" window). Each corner is its own fixed-aspect SVG,
@@ -23,20 +23,29 @@ const PLACEMENT = {
   br: 'bottom-0 right-0 -scale-100',
 }
 
-function Corner({ corner, animated, index }) {
+// Calm corners: faint 1px traces; only the top-left and bottom-right corners carry one slow, soft
+// pulse and one gently breathing glow, so a framed block never has more than two of either
+const ACCENT_CORNERS = { tl: { travel: 10, pause: 16, delay: 2 }, br: { travel: 12, pause: 14, delay: 13 } }
+
+function Corner({ corner, animated, uid }) {
+  const accent = ACCENT_CORNERS[corner]
   return (
     <svg viewBox="0 0 240 150" fill="none" className={`absolute h-auto w-[150px] sm:w-[200px] lg:w-[240px] ${PLACEMENT[corner]}`}>
-      {TRACES.map((t, i) => {
-        const delay = `${(index * 0.9 + i * 0.6).toFixed(2)}s`
-        return (
-          <g key={i} className={t.desktop ? 'hidden sm:inline' : undefined}>
-            <TraceLine d={t.d} />
-            {animated && <TracePulse d={t.d} delay={delay} duration={`${3.5 + (i % 3)}s`} />}
-            <RingNode x={t.node[0]} y={t.node[1]} />
-            {t.glow && <GlowNode x={t.node[0]} y={t.node[1]} animated={animated} delay={delay} />}
-          </g>
-        )
-      })}
+      <defs>
+        <filter id={`${uid}-${corner}-blur`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
+      </defs>
+      {TRACES.map((t, i) => (
+        <g key={i} className={t.desktop ? 'hidden sm:inline' : undefined}>
+          <TraceLine d={t.d} width={1} opacity={0.2} />
+          {animated && accent && i === 0 && (
+            <SoftPulse id={`${uid}-${corner}`} d={t.d} travel={accent.travel} pause={accent.pause} delay={accent.delay} blurId={`${uid}-${corner}-blur`} />
+          )}
+          <RingNode x={t.node[0]} y={t.node[1]} r={4} width={1} opacity={0.3} />
+          {accent && i === 0 && <GlowNode x={t.node[0]} y={t.node[1]} scale={0.8} animated={animated} delay={`${accent.delay}s`} />}
+        </g>
+      ))}
     </svg>
   )
 }
@@ -48,6 +57,7 @@ function Corner({ corner, animated, index }) {
  */
 export default function CircuitTraces({ corners = ['tl', 'tr', 'bl', 'br'], animated = true, drawIn = false, className = '' }) {
   const ref = useRef(null)
+  const uid = `ct${useId().replace(/[^a-zA-Z0-9]/g, '')}`
 
   // Pause the pulse animations while the traces are off-screen
   useEffect(() => {
@@ -67,8 +77,8 @@ export default function CircuitTraces({ corners = ['tl', 'tr', 'bl', 'br'], anim
       aria-hidden="true"
       className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] text-gold ${drawIn ? 'circuit-draw' : ''} ${className}`}
     >
-      {corners.map((c, i) => (
-        <Corner key={c} corner={c} index={i} animated={animated} />
+      {corners.map((c) => (
+        <Corner key={c} corner={c} uid={uid} animated={animated} />
       ))}
     </div>
   )

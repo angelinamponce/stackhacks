@@ -82,50 +82,30 @@ export function measurePage(root, origin) {
 }
 
 // Branch patterns as polylines of [dx, dy] offsets (dx is mirrored for the right spine).
-// a/b/c are randomised lengths; b is always used for 45-degree runs.
+// a/b/c are randomised lengths; b is always used for 45-degree runs. A mix of long, gently stepped
+// runs and a few short branches, so neighbouring clusters never read as repeated blocks.
 const PATTERNS = [
   // elbow: out, 45 down, out
   ({ a, b, c }) => ({ lines: [[[0, 0], [a, 0], [a + b, b], [a + b + c, b]]] }),
-  // fork: stem splits into an upper and a lower branch
+  // long step: a long run that steps down twice, gently
+  ({ a, b, c }) => ({ lines: [[[0, 0], [a * 1.4, 0], [a * 1.4 + b, b], [a * 1.4 + b + c * 0.8, b], [a * 1.4 + b * 1.6 + c * 0.8, b * 1.6], [a * 1.4 + b * 1.6 + c * 1.5, b * 1.6]]] }),
+  // fork: stem splits into an upper and a lower branch of different lengths
   ({ a, b, c }) => ({
     lines: [
       [[0, 0], [a, 0], [a + b, -b], [a + b + c, -b]],
-      [[a, 0], [a + b, b], [a + b + c * 0.6, b], [a + b + c * 0.6 + 10, b + 10], [a + b + c, b + 10]],
+      [[a, 0], [a + b * 0.7, b * 0.7], [a + b * 0.7 + c * 0.45, b * 0.7]],
     ],
-  }),
-  // stair: two steps down, glowing node on the middle landing
-  ({ a, b }) => ({
-    lines: [[[0, 0], [a, 0], [a + b, b], [2 * a + b, b], [2 * a + 2 * b, 2 * b], [3 * a + 2 * b, 2 * b]]],
-    midGlow: [2 * a + b, b],
   }),
   // drop: 45 off the spine, runs down the gutter, then out
   ({ a, b, c }) => ({ lines: [[[0, 0], [b, b], [b, b + c * 0.7], [b + 12, b + c * 0.7 + 12], [b + 12 + a, b + c * 0.7 + 12]]] }),
-  // bus: two parallel traces
-  ({ a, b, c }) => ({
-    lines: [
-      [[0, 0], [a, 0], [a + b, b], [a + b + c, b]],
-      [[0, 11], [a - 11, 11], [a - 11 + b, 11 + b], [a - 11 + b + c * 0.6, 11 + b]],
-    ],
-  }),
+  // short stub: a brief run with a single bend
+  ({ a, b }) => ({ lines: [[[0, 0], [a * 0.8, 0], [a * 0.8 + b * 0.8, -b * 0.8]]] }),
   // long run with a rise at the end (between sections)
   ({ a, b, c }) => ({ lines: [[[0, 0], [a * 1.6, 0], [a * 1.6 + b, b], [a * 1.6 + b + c, b], [a * 1.6 + b * 1.7 + c, b * 0.3], [a * 2.2 + b * 1.7 + c, b * 0.3]]] }),
   // hook up: rises toward the heading above
   ({ a, b, c }) => ({ lines: [[[0, 0], [a, 0], [a + b, -b], [a + b + c * 0.7, -b]]] }),
-  // comb: a run with short teeth dropping off it
-  ({ a, b, c }) => {
-    const run = [[0, 0], [a, 0], [a + b, b], [a + b + c, b]]
-    const teeth = [0.35, 0.7, 1].map((f) => { const x = a + b + c * f; return [[x, b], [x + 9, b + 9]] })
-    return { lines: [run, ...teeth] }
-  },
-  // zigzag: alternating 45-degree runs
-  ({ a, b, c }) => ({ lines: [[[0, 0], [a, 0], [a + b, b], [a + 2 * b, 0], [a + 3 * b, b], [a + 3 * b + c * 0.5, b]]] }),
-  // T-junction: stem ends in a short vertical bar, with a continuation
-  ({ a, b, c }) => ({
-    lines: [
-      [[0, 0], [a, 0], [a + c * 0.6, 0]],
-      [[a, -b], [a, b]],
-    ],
-  }),
+  // stair: two steps down with a long final run
+  ({ a, b, c }) => ({ lines: [[[0, 0], [a, 0], [a + b, b], [2 * a + b, b], [2 * a + 2 * b, 2 * b], [2 * a + 2 * b + c, 2 * b]]] }),
 ]
 
 const segBox = ([x1, y1], [x2, y2], pad) => ({
@@ -159,7 +139,21 @@ function clipByY(pts, blocked) {
   return runs
 }
 
-const toPath = (pts) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
+const f1 = (n) => n.toFixed(1)
+// Polyline -> path with slightly rounded corners (radius r, never more than half a segment)
+const toPath = (pts, r = 5) => {
+  if (pts.length < 3) return pts.map(([x, y], i) => `${i ? 'L' : 'M'}${f1(x)} ${f1(y)}`).join(' ')
+  let d = `M${f1(pts[0][0])} ${f1(pts[0][1])}`
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1]
+    const l1 = Math.hypot(x - px, y - py), l2 = Math.hypot(nx - x, ny - y)
+    const k = Math.min(r, l1 / 2, l2 / 2)
+    if (!k) { d += ` L${f1(x)} ${f1(y)}`; continue }
+    d += ` L${f1(x - ((x - px) / l1) * k)} ${f1(y - ((y - py) / l1) * k)} Q${f1(x)} ${f1(y)} ${f1(x + ((nx - x) / l2) * k)} ${f1(y + ((ny - y) / l2) * k)}`
+  }
+  const [lx, ly] = pts[pts.length - 1]
+  return `${d} L${f1(lx)} ${f1(ly)}`
+}
 
 /**
  * Builds the board for a measured page.
@@ -206,44 +200,48 @@ export function buildBoard({ W, H, avoid, boundaries, headings, heroZone }, mode
         return acc
       }, [])
     const runs = clipByY(pts, blocked)
+    // Each continuous run fades in and out at its ends (see CircuitBoard spine mask)
+    const fades = runs.map((run) => ({ y0: Math.min(...run.map(([, y]) => y)), y1: Math.max(...run.map(([, y]) => y)) }))
     const length = runs.reduce((sum, run) => sum + run.slice(1).reduce((l, [x, y], i) => l + Math.hypot(x - run[i][0], y - run[i][1]), 0), 0)
     const isBlocked = (y) => blocked.some(([a, b]) => y > a - 12 && y < b + 12)
     const jogZones = pts.slice(1, -1).map(([, y]) => y)
-    return { side, inward, d: runs.map(toPath).join(' '), length, xAt, jogZones, isBlocked }
+    return { side, inward, d: runs.map((run) => toPath(run, 10)).join(' '), length, xAt, jogZones, isBlocked, fades }
   })
 
   // Section nodes on the spines (light up as the scroll head reaches them)
   const spineNodes = []
   spines.forEach((s) => boundaries.forEach((yb) => { if (!s.isBlocked(yb)) spineNodes.push({ x: s.xAt(yb), y: yb }) }))
 
-  if (mode === 'minimal') return { W, H, spines, spineNodes, branches: [] }
+  if (mode === 'minimal') return { W, H, spines, spineNodes, branches: [], heroZone }
 
   // Branch roots: section boundaries, headings (quiet anchors), and fillers in long stretches
   const roots = []
   const inHero = (y) => heroZone && y >= heroZone.top - 20 && y <= heroZone.bottom
   boundaries.forEach((yb, i) => roots.push({ y: yb + 28, side: i % 2 ? 'R' : 'L', kind: 'boundary', seed: i + 1 }))
-  // Denser board everywhere except the hero: the other side of every boundary, plus frequent extra roots
-  boundaries.forEach((yb, i) => roots.push({ y: yb + 64, side: i % 2 ? 'L' : 'R', kind: 'dense', seed: 500 + i }))
-  ;['L', 'R'].forEach((side, si) => {
-    const r = rng(900 + si)
-    const step = mode === 'full' ? 170 : 240
-    for (let y = NAV_H + 60 + si * (step / 2); y < H - 60; y += step + r() * 60) {
-      if (!inHero(y)) roots.push({ y: Math.round(y), side, kind: 'dense', seed: 700 + si * 97 + Math.round(y / 7) })
-    }
-  })
   if (mode === 'full') {
     headings.forEach((h, i) => {
       const side = Math.abs(h.cx - W / 2) < 120 ? (i % 2 ? 'L' : 'R') : h.cx < W / 2 ? 'L' : 'R'
       roots.push({ y: h.y, side, kind: 'anchor', seed: 100 + i })
     })
     ;['L', 'R'].forEach((side, si) => {
-      for (let y = 420 + si * 260; y < H - 200; y += 560) roots.push({ y, side, kind: 'filler', seed: 300 + si * 50 + Math.round(y / 10) })
+      // Sparse, jittered fillers down each gutter (offset per side so the two margins never mirror)
+      const r = rng(1200 + si)
+      for (let y = 300 + si * 190; y < H - 200; y += 280 + r() * 100) roots.push({ y: Math.round(y), side, kind: 'filler', seed: 300 + si * 50 + Math.round(y / 10) })
     })
   }
 
   const maxReach = mode === 'full' ? Math.min(W * 0.24, 340) : 170
+  // Landing hero (home page only): branches stay in the far gutters, well clear of the content
+  const heroReach = Math.max(0, contentLeft - sx - 28)
+  const heroGlows = { L: 0, R: 0 }
+  const HERO_MAX_GLOWS = 2
   const lastY = { L: -Infinity, R: -Infinity }
-  const minGap = (y) => (inHero(y) ? 150 : 96)
+  const minGap = (y) => (inHero(y) ? 220 : 160)
+  // Page-wide spacing so glows and pulses stay rare: about one of each per screen height at most
+  let lastGlowY = -Infinity
+  let lastPulseY = -Infinity
+  const GLOW_GAP = 700
+  const PULSE_GAP = 820
   const branches = []
   let patternIdx = 0
 
@@ -251,48 +249,43 @@ export function buildBoard({ W, H, avoid, boundaries, headings, heroZone }, mode
     const spine = spines.find((s) => s.side === root.side)
     if (!spine || root.y < NAV_H + 30 || root.y > H - 40) return
     const hero = inHero(root.y)
-    if (hero && root.kind === 'dense') return
+    if (hero && heroReach < 30) return
     if (root.y - lastY[root.side] < minGap(root.y)) return
     if (spine.jogZones.some((jy) => Math.abs(jy - root.y) < 60) || spine.isBlocked(root.y)) return
 
     const rand = rng(root.seed * 7 + (root.side === 'R' ? 3 : 0))
     // Cycle through patterns with a random offset so neighbours never repeat
-    const pool = hero ? 7 : PATTERNS.length
-    patternIdx = (patternIdx + 1 + Math.floor(rand() * 3)) % pool
-    const base = { a: 24 + rand() * 34, b: 12 + rand() * 16, c: 30 + rand() * 70 }
+    patternIdx = (patternIdx + 1 + Math.floor(rand() * 3)) % PATTERNS.length
+    // Wide random ranges so lengths and step heights vary from cluster to cluster
+    const base = { a: 20 + rand() * 60, b: 10 + rand() * 22, c: 30 + rand() * 130 }
     const x0 = spine.xAt(root.y)
 
     for (let scale = 1; scale > 0.3; scale *= 0.7) {
       const p = PATTERNS[patternIdx]({ a: base.a * scale, b: base.b * Math.max(scale, 0.6), c: base.c * scale })
       const lines = p.lines.map((pl) => pl.map(([dx, dy]) => [x0 + spine.inward * dx, root.y + dy]))
       const reach = Math.max(...lines.flat().map(([x]) => Math.abs(x - x0)))
-      if (reach > maxReach) continue
+      if (reach > (hero ? heroReach : maxReach)) continue
       const inBounds = lines.flat().every(([x, y]) => x > 4 && x < W - 4 && y > NAV_H && y < H - 4)
       const clear = lines.every((pl) => pl.every((pt, i) => i === 0 || !padded.some((r) => hits(segBox(pl[i - 1], pt, 7), r))))
       if (!inBounds || !clear) continue
 
-      const ends = lines.map((pl) => pl[pl.length - 1])
-      const glowEnd = root.kind === 'anchor' || rand() < (hero ? 0.3 : 0.5)
-      // Extra ring nodes on some bends (not in the hero), so node counts vary per cluster
-      const bends = hero ? [] : lines.flatMap((pl) => pl.slice(1, -1)).filter(() => rand() < 0.3)
-      const midGlow = !hero && bends.length && rand() < 0.4 ? [bends[0]] : []
+      // One ring per trace, on the last bend of the main line (the line itself fades out past it)
+      const main = lines[0]
+      const ring = main.length > 2 ? main[main.length - 2] : null
+      const glowAllowed = ring && root.y - lastGlowY > GLOW_GAP && (!hero || heroGlows[root.side] < HERO_MAX_GLOWS)
+      const glow = glowAllowed && (root.kind === 'anchor' || rand() < 0.5)
+      if (glow) { lastGlowY = root.y; if (hero) heroGlows[root.side]++ }
+      // A single soft pulse on the main line, only on well-spaced branches; slow travel, long random pause
+      const pulse = root.y - lastPulseY > PULSE_GAP && rand() < 0.8
+      if (pulse) lastPulseY = root.y
       branches.push({
-        lines: lines.map(toPath),
-        rings: [...ends, ...bends],
-        glows: [
-          ...(glowEnd ? [ends[0]] : []),
-          ...midGlow,
-          ...(p.midGlow ? [[x0 + spine.inward * p.midGlow[0] * scale, root.y + p.midGlow[1] * Math.max(scale, 0.6)]] : []),
-        ],
+        lines: lines.map((pl) => toPath(pl)),
+        // Start and end points of each line, for the fade-out gradients
+        spans: lines.map((pl) => [pl[0], pl[pl.length - 1]]),
+        rings: ring ? [ring] : [],
+        glows: glow ? [ring] : [],
         hero,
-        pulse: hero ? rand() < 0.55 : true,
-        pulseDelay: `${(rand() * 4).toFixed(2)}s`,
-        pulseDuration: `${(3.5 + rand() * 2.5).toFixed(2)}s`,
-        // Pulse train for every line outside the hero: staggered, randomised speeds
-        trains: hero ? null : lines.map(() => {
-          const dur = 2.6 + rand() * 1.6
-          return { dur, count: Math.max(2, Math.round(dur / 1.4)), offset: rand() * dur }
-        }),
+        pulse: pulse ? { travel: 8 + rand() * 6, pause: 10 + rand() * 10, delay: rand() * 18 } : null,
         anchor: root.kind === 'anchor',
         y0: Math.min(...lines.flat().map(([, y]) => y)),
         y1: Math.max(...lines.flat().map(([, y]) => y)),
@@ -302,5 +295,5 @@ export function buildBoard({ W, H, avoid, boundaries, headings, heroZone }, mode
     }
   })
 
-  return { W, H, spines, spineNodes, branches }
+  return { W, H, spines, spineNodes, branches, heroZone }
 }

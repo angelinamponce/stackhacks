@@ -7,16 +7,20 @@ export default function Constellation() {
     const cvs = ref.current;
     const ctx = cvs.getContext("2d");
 
+    // Quiet background: about half the nodes, ~35-40% of the old opacity, slow drift, no node halos
     const CFG = {
-      nodes: 62,
+      nodes: 31,
       connectDist: 190,
-      nodeR: 3,
-      glowR: 18,
-      speed: 0.3,
+      nodeR: 2.6,
+      speed: 0.12,
       mouseR: 230,
-      mouseForce: 0.025,
-      wobble: 0.01,
+      mouseForce: 0.012,
+      wobble: 0.006,
+      lineAlpha: 0.2,
+      nodeAlpha: 0.35,
+      mouseAlpha: 0.14,
     };
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const C = {
       n: [226, 188, 114],
       g: [198, 161, 91],
@@ -58,12 +62,32 @@ export default function Constellation() {
       nodes = Array.from({ length: CFG.nodes }, mkNode);
     };
 
+    // Fade the network out behind content marked [data-network-clear] (the hero's text column):
+    // a hard cut just around the box so no dot or line crosses it, then a soft feathered edge.
+    const clearZones = () => {
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      for (const el of document.querySelectorAll("[data-network-clear]")) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > H || !r.width) continue;
+        for (let k = 6; k >= 0; k--) {
+          const pad = 16 + k * 14;
+          ctx.fillStyle = `rgba(0,0,0,${k === 0 ? 1 : 0.2})`;
+          ctx.beginPath();
+          ctx.roundRect(r.left - pad, r.top - pad, r.width + pad * 2, r.height + pad * 2, 24 + k * 10);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    };
+
+    let raf = 0;
     const frame = () => {
-      requestAnimationFrame(frame);
+      if (!reduceMotion) raf = requestAnimationFrame(frame);
       t++;
       ctx.clearRect(0, 0, W, H);
 
-      for (const n of nodes) {
+      for (const n of reduceMotion ? [] : nodes) {
         n.vx += Math.sin(t * n.wFx + n.wPx) * n.wAx * CFG.wobble;
         n.vy += Math.cos(t * n.wFy + n.wPy) * n.wAy * CFG.wobble;
         const dx = mouse.x - n.x,
@@ -94,7 +118,7 @@ export default function Constellation() {
             b = nodes[j];
           const dist = Math.hypot(a.x - b.x, a.y - b.y);
           if (dist < CFG.connectDist) {
-            const alpha = Math.pow(1 - dist / CFG.connectDist, 1.4) * 0.55;
+            const alpha = Math.pow(1 - dist / CFG.connectDist, 1.4) * CFG.lineAlpha;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -111,63 +135,38 @@ export default function Constellation() {
             ctx.beginPath();
             ctx.moveTo(mouse.x, mouse.y);
             ctx.lineTo(n.x, n.y);
-            ctx.strokeStyle = rgba(C.m, (1 - dist / CFG.mouseR) * 0.4);
+            ctx.strokeStyle = rgba(C.m, (1 - dist / CFG.mouseR) * CFG.mouseAlpha);
             ctx.stroke();
           }
         }
       }
 
       for (const n of nodes) {
-        const gr = ctx.createRadialGradient(
-          n.x,
-          n.y,
-          0,
-          n.x,
-          n.y,
-          n.r * CFG.glowR * 0.45,
-        );
-        gr.addColorStop(0, rgba(C.g, 0.28));
-        gr.addColorStop(0.35, rgba(C.g, 0.1));
-        gr.addColorStop(1, rgba(C.g, 0));
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r * CFG.glowR * 0.45, 0, Math.PI * 2);
-        ctx.fillStyle = gr;
-        ctx.fill();
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(C.n, 0.92);
+        ctx.fillStyle = rgba(C.n, CFG.nodeAlpha);
         ctx.fill();
       }
 
       if (mouse.x > -100) {
-        const mr = 3.8;
-        const mg = ctx.createRadialGradient(
-          mouse.x,
-          mouse.y,
-          0,
-          mouse.x,
-          mouse.y,
-          mr * 7,
-        );
-        mg.addColorStop(0, rgba(C.m, 0.3));
-        mg.addColorStop(0.5, rgba(C.m, 0.1));
-        mg.addColorStop(1, rgba(C.m, 0));
         ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, mr * 7, 0, Math.PI * 2);
-        ctx.fillStyle = mg;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, mr, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(C.m, 0.8);
+        ctx.arc(mouse.x, mouse.y, 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(C.m, 0.35);
         ctx.fill();
       }
+
+      clearZones();
     };
 
     const onResize = () => {
       resize();
       init();
+      if (reduceMotion) frame();
     };
+    // Reduced motion: a static network, redrawn only when the page scrolls (so the clear zone follows the text)
+    const onScroll = () => { if (reduceMotion) frame(); };
     const onMove = (e) => {
+      if (reduceMotion) return;
       mouse.x = e.clientX;
       mouse.y = e.clientY;
     };
@@ -177,6 +176,7 @@ export default function Constellation() {
     };
 
     window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseleave", onLeave);
 
@@ -185,7 +185,9 @@ export default function Constellation() {
     frame();
 
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseleave", onLeave);
     };
