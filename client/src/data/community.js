@@ -23,6 +23,14 @@ import hackMadness3 from '../assets/events/hack-madness-3.jpg'
 import hackMadness4 from '../assets/events/hack-madness-4.jpg'
 import angelinaHeadshot from '../assets/events/angelina-ponce-headshot.jpg'
 import hamidHeadshot from '../assets/events/hamid-ajose-headshot.jpg'
+// Official logos, downloaded from each organization's own website (stored locally, not hotlinked)
+import brightshoreLogo from '../assets/logos/brightshore.svg'
+import cpcLogo from '../assets/logos/cpc.png'
+import hackmitLogo from '../assets/logos/hackmit.svg'
+import colorstackLogo from '../assets/logos/colorstack.png'
+import eunoLogo from '../assets/logos/euno.svg'
+import neuralseekLogo from '../assets/logos/neuralseek.svg'
+import binghamtonLogo from '../assets/logos/binghamton.png'
 
 // Community page content. Photos are one entry per slot:
 //   { src, alt, caption, placeholder, position, more }
@@ -49,8 +57,9 @@ export const ceremony = {
   },
   // Speakers: the card photo is the event photo; clicking it opens a profile panel with the headshot
   // and achievements. Achievements use only the facts provided (slide wording kept where noted).
-  //   achievement: { text, detail?, current?, company?, logo?, chipLabel? }
-  //   logo is a company title in the site's logo set (Sanity "company" docs); otherwise a text chip shows
+  //   achievement: { text, detail?, current?, company?, logo?, logoSrc?, logoTone?, chipLabel? }
+  //   logoSrc is a local logo file; logo is a company title in the site's logo set (Sanity "company" docs);
+  //   logoTone 'light' shows a dark logo on a light plate; with neither, a text chip shows
   //   headshot.sanityFounder: load the headshot from that person's Sanity founder document instead
   speakers: [
     {
@@ -59,10 +68,10 @@ export const ceremony = {
       headshot: { src: angelinaHeadshot, alt: 'Headshot of Angelina Ponce in a black blazer against an orange backdrop', position: '50% 30%' },
       // From her career-highlights slide (the slide names Brightshore Capital for the private equity role)
       achievements: [
-        { text: 'Private Equity Summer Analyst at Brightshore Capital', company: 'Brightshore Capital' },
-        { text: 'Asset Management Summer Analyst at CPC', company: 'CPC' },
-        { text: 'HackMIT 2025 and 2026', company: 'HackMIT' },
-        { text: 'ColorStack StackedUp Summit 2025 and 2026', company: 'ColorStack' },
+        { text: 'Private Equity Summer Analyst at Brightshore Capital', company: 'Brightshore Capital', logoSrc: brightshoreLogo, logoTone: 'light' },
+        { text: 'Asset Management Summer Analyst at CPC', company: 'CPC', logoSrc: cpcLogo, logoTone: 'light' },
+        { text: 'HackMIT 2025 and 2026', company: 'HackMIT', logoSrc: hackmitLogo },
+        { text: 'ColorStack StackedUp Summit 2025 and 2026', company: 'ColorStack', logoSrc: colorstackLogo },
       ],
     },
     {
@@ -70,7 +79,7 @@ export const ceremony = {
       src: eoyGuestSpeaker, alt: 'Hamid Ajose smiling at a Binghamton University podium beside a Guest Speaker slide showing an Amazon logo', placeholder: 'Photo coming soon',
       headshot: { src: hamidHeadshot, alt: 'Headshot of Hamid Ajose smiling in a black shirt against a light gray backdrop', position: '50% 25%' },
       achievements: [
-        { text: 'Founding Enterprise ADR at Euno', detail: 'Full-time · Apr 2026 – Present · New York City Metropolitan Area', current: true, company: 'Euno' },
+        { text: 'Founding Enterprise ADR at Euno', detail: 'Full-time · Apr 2026 – Present · New York City Metropolitan Area', current: true, company: 'Euno', logoSrc: eunoLogo, logoTone: 'light' },
         // Event slide wording; LinkedIn lists it as SDE Intern at Amazon
         { text: 'Software Development Engineer Intern @ Amazon Web Services', detail: 'SDE Intern at Amazon · May 2025 – Sep 2025 · Palo Alto, California', company: 'Amazon', logo: 'Amazon' },
       ],
@@ -80,12 +89,12 @@ export const ceremony = {
       src: eoyFoundersAddress, alt: 'David Ponce speaking at a Binghamton University podium beside a Founders Address slide, with guests seated in the foreground', placeholder: 'Photo coming soon',
       headshot: { sanityFounder: 'David Ponce', alt: 'Headshot of David Ponce', position: '50% 25%' },
       achievements: [
-        { text: 'Technology consulting at Brightshore Capital', current: true, company: 'Brightshore Capital' },
+        { text: 'Technology consulting at Brightshore Capital', current: true, company: 'Brightshore Capital', logoSrc: brightshoreLogo, logoTone: 'light' },
         { text: "Pursuing a Master's in Computer Science at NYU Tandon School of Engineering", current: true, company: 'NYU Tandon School of Engineering', chipLabel: 'NYU Tandon' },
         { text: "3rd place at HackMIT '25, Infosys Top Sponsor Challenge", company: 'Infosys', logo: 'Infosys' },
         { text: 'Pursued published research on adversarial defenses against deepfake audio with Intel Corporation', company: 'Intel', logo: 'Intel' },
-        { text: 'Former 2x NCAA Division 1 Swim & Dive Captain' },
-        { text: 'Software Development Intern at NeuralSeek', detail: 'May 2026 – Aug 2026 · Remote', company: 'NeuralSeek' },
+        { text: 'Former 2x NCAA Division 1 Swim & Dive Captain', company: 'Binghamton University', logoSrc: binghamtonLogo },
+        { text: 'Software Development Intern at NeuralSeek', detail: 'May 2026 – Aug 2026 · Remote', company: 'NeuralSeek', logoSrc: neuralseekLogo },
         { text: 'Technician, Program Development at Emerging Technology Studio, Binghamton University', detail: 'Mar 2024 – May 2026', company: 'Emerging Technology Studio', chipLabel: 'Emerging Tech Studio' },
       ],
     },
