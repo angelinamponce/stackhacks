@@ -58,6 +58,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/past-events" className="hover:text-primary transition-colors">
+                  Past Events
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="hover:text-primary transition-colors">
                   Contact
                 </Link>

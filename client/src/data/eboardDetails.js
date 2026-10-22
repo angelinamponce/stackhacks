@@ -236,7 +236,7 @@ export const eboardDetails = {
     involvement: [
       { title: 'Vice President of Internal Affairs', start: '2026-05', end: null, description: "Enhancing the organization's internal pipelines, streamlining communications between different chairs", skills: [] },
       { title: 'Chief Marketing Officer', start: '2025-05', end: '2026-05', description: 'Drove an increase in student engagement by designing and deploying high-impact visual content', skills: [] },
-      { title: 'Supervisor, S|H Cybersecurity Team', start: '2025-09', end: '2026-05', skills: [] },
+      { title: 'Supervisor, Cybersecurity Team', start: '2025-09', end: '2026-05', skills: [] },
       { title: 'Intern', start: '2025-03', end: '2025-05', description: 'Learned the processes of how the organization works and helped plan events', skills: [] },
     ],
     externalExperience: [

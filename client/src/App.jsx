@@ -12,6 +12,7 @@ import Projects from './pages/Projects'
 import About from './pages/About'
 import Eboard from './pages/Eboard'
 import Events from './pages/Events'
+import PastEvents from './pages/PastEvents'
 import Contact from './pages/Contact'
 import SanityRedirect from './pages/SanityRedirect'
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/eboard" element={<Eboard />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/past-events" element={<PastEvents />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/sanity" element={<SanityRedirect />} />
           <Route path="/studio" element={<SanityRedirect />} />

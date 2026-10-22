@@ -14,6 +14,7 @@ import { useDialog } from '../lib/dialog'
 import { fetchCompanies, logoMap } from '../lib/companies'
 import { eboardDetails } from '../data/eboardDetails'
 import { expandTitle } from '../lib/titles'
+import { initials } from '../lib/initials'
 import { dateRange, duration, involvedSince, isCurrent } from '../lib/involvement'
 import { projectSlug } from '../lib/projects'
 
@@ -178,6 +179,19 @@ function PreviousExperience({ entries, logos }) {
   )
 }
 
+// Round header photo; initials stand in when there is no photo or it fails to load
+function MemberAvatar({ member }) {
+  const [broken, setBroken] = useState(false)
+  const ring = "relative h-20 w-20 sm:h-28 sm:w-28 rounded-full ring-2 ring-accent/80 ring-offset-4 ring-offset-[#18181b]"
+  return member.image && !broken ? (
+    <img src={member.image} alt={member.name} onError={() => setBroken(true)} className={`${ring} object-cover object-[50%_25%]`} />
+  ) : (
+    <div role="img" aria-label={member.name} className={`${ring} flex items-center justify-center bg-accent/10 text-2xl sm:text-3xl font-semibold text-accent`}>
+      {initials(member.name)}
+    </div>
+  )
+}
+
 function MemberDetail({ members, index, logos, origin, returnRef, onClose, onNavigate }) {
   const dialogRef = useRef(null)
   const closeRef = useRef(null)
@@ -246,7 +260,7 @@ function MemberDetail({ members, index, logos, origin, returnRef, onClose, onNav
               <div className="flex items-center gap-4 sm:gap-5 pr-10">
                 <div className="relative shrink-0">
                   <div className="absolute -inset-2 rounded-full bg-accent/25 blur-xl" />
-                  <img src={member.image} alt={member.name} className="relative h-20 w-20 sm:h-28 sm:w-28 rounded-full object-cover object-[50%_25%] ring-2 ring-accent/80 ring-offset-4 ring-offset-[#18181b]" />
+                  <MemberAvatar member={member} />
                 </div>
                 <div className="min-w-0 space-y-1.5">
                   <h2 id={titleId} className="text-xl sm:text-3xl font-semibold text-primary">{member.name}</h2>

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTilt } from '../lib/pointer'
+import { initials } from '../lib/initials'
 import CornerTraces from './os/CornerTraces'
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 26 }
@@ -27,6 +29,9 @@ export default function PortraitCard({
   buttonProps = {},
 }) {
   const tilt = useTilt({ max: 6, scale: 1 })
+  // Initials stand in when there is no photo or it fails to load
+  const [broken, setBroken] = useState(false)
+  const showPhoto = image && !broken
   const lifted = isActive || isHovered
   // While hovering, everything except the hovered card dims; otherwise only non-selected cards do.
   const brightness = !anyHovered ? (isActive ? 1 : 0.72) : isHovered ? 1.05 : isActive ? 0.85 : 0.55
@@ -51,7 +56,13 @@ export default function PortraitCard({
             : 'border-white/10 shadow-[0_22px_44px_-26px_rgba(0,0,0,0.95)] group-hover:border-accent/50'
         }`}
       >
-        <img src={image} alt="" draggable={false} loading="lazy" className="h-full w-full object-cover object-[50%_22%]" />
+        {showPhoto ? (
+          <img src={image} alt="" draggable={false} loading="lazy" onError={() => setBroken(true)} className="h-full w-full object-cover object-[50%_22%]" />
+        ) : (
+          <div aria-hidden="true" className="flex h-full w-full items-start justify-center bg-gradient-to-b from-accent/15 to-transparent pt-[22%] text-5xl lg:text-6xl font-semibold tracking-wide text-accent/80">
+            {initials(name)}
+          </div>
+        )}
         {/* Legibility gradient behind the name plate */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/70 to-transparent" />
         <CornerTraces show={isActive} />
