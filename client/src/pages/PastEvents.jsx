@@ -1,7 +1,12 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
+import { client } from '../sanityClient'
 import { Reveal } from '../components/Interactive'
 import PhotoSlot from '../components/PhotoSlot'
 import PhotoGallery from '../components/PhotoGallery'
+import PastEventsHero from '../components/PastEventsHero'
+import SpeakerPanel from '../components/SpeakerPanel'
 import { ceremony, generalBody, hackMadness } from '../data/pastEvents'
 
 function SectionHeading({ id, eyebrow, title, intro }) {
@@ -36,18 +41,88 @@ function PhotoGrid({ photos, aspect, className }) {
   )
 }
 
+/**
+ * Speaker cards (event photo, gold role, name). A card opens that speaker's profile panel.
+ * Headshots marked `sanityFounder` are loaded from the matching Sanity founder document.
+ */
+function SpeakerRow({ speakers: data }) {
+  const [speakers, setSpeakers] = useState(data)
+  const [open, setOpen] = useState(null)
+  const cardRefs = useRef([])
+  const returnRef = useRef(null)
+
+  useEffect(() => {
+    const names = data.map((s) => s.headshot?.sanityFounder).filter(Boolean)
+    if (!names.length) return
+    client
+      .fetch(`*[_type == "founder" && name in $names]{ name, "image": image.asset->url }`, { names })
+      .then((rows) => {
+        const urls = Object.fromEntries((rows || []).filter((r) => r.image).map((r) => [r.name, `${r.image}?w=480&h=480&fit=crop&auto=format`]))
+        setSpeakers(data.map((s) => (urls[s.headshot?.sanityFounder] ? { ...s, headshot: { ...s.headshot, src: urls[s.headshot.sanityFounder] } } : s)))
+      })
+      .catch(() => {}) // the panel falls back to initials
+  }, [data])
+
+  const close = useCallback(() => setOpen(null), [])
+  const navigate = useCallback((dir) => setOpen((i) => {
+    if (i === null) return i
+    const n = (i + dir + speakers.length) % speakers.length
+    returnRef.current = cardRefs.current[n] // focus returns to the speaker last shown
+    return n
+  }), [speakers.length])
+
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      {speakers.map((s, i) => (
+        <Reveal key={s.name} delay={i * 0.08}>
+          <PhotoSlot
+            photo={s}
+            aspect="aspect-[3/2]"
+            label={`Open profile: ${s.name}, ${s.role}`}
+            buttonRef={(el) => { cardRefs.current[i] = el }}
+            onOpen={() => { returnRef.current = cardRefs.current[i]; setOpen(i) }}
+            captionContent={
+              <>
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">{s.role}</span>
+                <span className="mt-1 block text-lg font-semibold text-primary">{s.name}</span>
+              </>
+            }
+          />
+        </Reveal>
+      ))}
+
+      <AnimatePresence>
+        {open !== null && (
+          <SpeakerPanel speakers={speakers} index={open} onClose={close} onNavigate={navigate} returnRef={returnRef} />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const SECTIONS = [
+  { id: 'ceremony', label: 'End of Year Ceremony' },
+  { id: 'general-body', label: 'General Body Events & Workshops' },
+  { id: 'hack-madness', label: 'Hack Madness' },
+]
+
+// Hero facts, counted from the data file (nothing hardcoded)
+const allPhotos = [
+  ceremony.groupPhoto, ...ceremony.speakers, ...ceremony.teams, ...ceremony.teams.flatMap((t) => t.more || []),
+  ...generalBody.photos, ...hackMadness.photos,
+]
+const FACTS = [
+  { value: SECTIONS.length, label: 'event types' },
+  { value: ceremony.teams.length, label: 'project teams' },
+  { value: allPhotos.filter((p) => p.src).length, label: 'photos' },
+]
+
 const PastEvents = () => {
   return (
     <div className="relative">
-      <div className="max-w-6xl mx-auto px-6" style={{ paddingTop: 'clamp(56px, 10svh, 120px)' }}>
-        <Reveal className="text-center max-w-2xl mx-auto mb-4 space-y-4">
-          <span className="eyebrow">Archive</span>
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary">Past Events</h1>
-          <p className="text-secondary text-base sm:text-lg leading-relaxed">
-            Highlights from our End of Year Ceremony, general body events and workshops, and Hack Madness.
-          </p>
-        </Reveal>
+      <PastEventsHero sections={SECTIONS} facts={FACTS} />
 
+      <div className="max-w-6xl mx-auto px-6">
         {/* ── A. End of Year Ceremony ── */}
         <section id="ceremony" aria-labelledby="ceremony-title" className="screen-section space-y-10">
           <SectionHeading eyebrow="Celebration" id="ceremony-title" title="End of Year Ceremony" intro={ceremony.intro} />
@@ -59,7 +134,7 @@ const PastEvents = () => {
           <Divider />
           <div className="space-y-5">
             <SubHeading>Speakers</SubHeading>
-            <PhotoGrid photos={ceremony.speakers} aspect="aspect-[3/2]" className="sm:grid-cols-3" />
+            <SpeakerRow speakers={ceremony.speakers} />
           </div>
 
           <Divider />

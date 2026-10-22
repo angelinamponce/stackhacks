@@ -9,7 +9,7 @@ import Lightbox from './Lightbox'
  * image fails to load) it shows a "coming soon" placeholder, so there is never a broken image.
  * Extra photos in `more` open with the main one as a set (prev/next). The lightbox shows photos only, no captions.
  */
-export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = '', onOpen, onError, featured = false, eager = false }) {
+export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = '', onOpen, onError, featured = false, eager = false, label, captionContent, buttonRef }) {
   const [openAt, setOpenAt] = useState(null)
   const [broken, setBroken] = useState(false)
   const [brokenMore, setBrokenMore] = useState(() => new Set())
@@ -39,9 +39,10 @@ export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = 
     <figure className={`space-y-3 ${className}`}>
       {hasPhoto ? (
         <button
+          ref={buttonRef}
           type="button"
           onClick={handleOpen}
-          aria-label={`View larger${isSet ? ` (${set.length} photos)` : ''}: ${photo.alt}`}
+          aria-label={label || `View larger${isSet ? ` (${set.length} photos)` : ''}: ${photo.alt}`}
           className={`${frame} ${edge} group block bg-card cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-4 focus-visible:ring-offset-background`}
         >
           <img
@@ -65,7 +66,9 @@ export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = 
           <span className="px-4 text-xs font-medium uppercase tracking-[0.2em] text-secondary">{photo.placeholder || 'Photo coming soon'}</span>
         </div>
       )}
-      {photo.caption && (
+      {captionContent ? (
+        <figcaption className="text-center">{captionContent}</figcaption>
+      ) : photo.caption && (
         <figcaption className="text-center text-sm font-medium text-primary/90">{photo.caption}</figcaption>
       )}
 

@@ -5,7 +5,8 @@ import { CircularDisplay } from '../components/CircularDisplay'
 import FoundersCarousel from '../components/FoundersCarousel'
 import { CountUp, Reveal } from '../components/Interactive'
 import { spotlightHandlers } from '../lib/pointer'
-import { Bell, FileText, Calendar, Globe } from 'lucide-react'
+import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users, Building2 } from 'lucide-react'
+import CornerTraces from '../components/os/CornerTraces'
 import LoadError from '../components/LoadError'
 
 // Founders hidden from the carousel (matched case-insensitively on name).
@@ -168,10 +169,10 @@ const About = () => {
 
   const statItems = stats
     ? [
-        { label: 'Active Projects', value: stats.projects },
-        { label: 'Events Hosted', value: stats.events },
-        { label: 'Student Leaders', value: stats.leaders },
-        { label: 'Companies Represented', value: stats.partners },
+        { label: 'Active Projects', value: stats.projects, icon: Layers },
+        { label: 'Events Hosted', value: stats.events, icon: CalendarDays },
+        { label: 'Student Leaders', value: stats.leaders, icon: Users },
+        { label: 'Companies Represented', value: stats.partners, icon: Building2 },
       ].filter((s) => s.value > 0)
     : []
 
@@ -191,24 +192,18 @@ const About = () => {
           {loadError && <LoadError what="the latest club stats and photos" />}
 
           {statItems.length > 0 && (
-            <dl className="grid grid-cols-2 lg:grid-cols-4 border-y border-white/[0.08]">
+            <ul className="flex flex-wrap justify-center gap-3 sm:gap-5">
               {statItems.map((stat, i) => (
-                <div
+                <Reveal
+                  as="li"
                   key={stat.label}
-                  className={`flex flex-col-reverse items-center justify-end gap-2 px-4 py-8 sm:py-10 text-center
-                    ${i % 2 === 1 ? 'border-l border-white/[0.08]' : ''}
-                    ${i >= 2 ? 'border-t border-white/[0.08] lg:border-t-0' : ''}
-                    ${i === 2 ? 'lg:border-l' : ''}`}
+                  delay={i * 0.08}
+                  className="w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3.75rem)/4)]"
                 >
-                  <dt className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-secondary/70">
-                    {stat.label}
-                  </dt>
-                  <dd className="text-4xl sm:text-5xl font-semibold tracking-tight bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">
-                    <CountUp to={stat.value} suffix={stat.suffix} />
-                  </dd>
-                </div>
+                  <StatCard stat={stat} />
+                </Reveal>
               ))}
-            </dl>
+            </ul>
           )}
         </section>
 
@@ -248,6 +243,26 @@ const About = () => {
           </ol>
         </section>
 
+      </div>
+    </div>
+  )
+}
+
+/** One About stat: gold icon, count-up number, underline accent and label in a glass card. */
+function StatCard({ stat }) {
+  const Icon = stat.icon
+  return (
+    <div className="stat-card card-shine group relative h-full overflow-hidden rounded-2xl border border-accent/25 bg-white/[0.025] px-3 py-6 sm:px-6 sm:py-8 text-center shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_28px_-14px_rgba(254,178,58,0.35)] transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_40px_-10px_rgba(254,178,58,0.55),0_24px_44px_-24px_rgba(0,0,0,0.9)]">
+      <CornerTraces hover />
+      <div className="flex flex-col items-center gap-3">
+        <Icon aria-hidden="true" className="h-5 w-5 text-accent" strokeWidth={1.75} />
+        <p className="whitespace-nowrap text-[clamp(2.25rem,9vw,3.5rem)] font-semibold leading-none tracking-tight bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">
+          <CountUp to={stat.value} suffix={stat.suffix} />
+        </p>
+        <span aria-hidden="true" className="h-px w-8 bg-gradient-to-r from-transparent via-accent to-transparent" />
+        <p className="min-h-[2.75em] lg:min-h-0 text-[10px] sm:text-xs font-semibold uppercase leading-snug tracking-[0.16em] sm:tracking-[0.2em] text-primary/80">
+          {stat.label}
+        </p>
       </div>
     </div>
   )

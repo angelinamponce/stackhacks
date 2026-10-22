@@ -17,6 +17,8 @@ import hackMadness1 from '../assets/events/hack-madness-1.jpg'
 import hackMadness2 from '../assets/events/hack-madness-2.jpg'
 import hackMadness3 from '../assets/events/hack-madness-3.jpg'
 import hackMadness4 from '../assets/events/hack-madness-4.jpg'
+import angelinaHeadshot from '../assets/events/angelina-ponce-headshot.jpg'
+import hamidHeadshot from '../assets/events/hamid-ajose-headshot.jpg'
 
 // Past Events page content. Photos are one entry per slot:
 //   { src, alt, caption, placeholder, position, more }
@@ -41,27 +43,65 @@ export const ceremony = {
     placeholder: 'Group photo coming soon',
     position: '50% 40%',
   },
+  // Speakers: the card photo is the event photo; clicking it opens a profile panel with the headshot
+  // and achievements. Achievements use only the facts provided (slide wording kept where noted).
+  //   achievement: { text, detail?, current?, company?, logo?, chipLabel? }
+  //   logo is a company title in the site's logo set (Sanity "company" docs); otherwise a text chip shows
+  //   headshot.sanityFounder: load the headshot from that person's Sanity founder document instead
   speakers: [
-    { src: eoyHost, alt: 'A speaker at a Binghamton University podium beside an End of Year Banquet slide, with guests seated at banquet tables in the foreground', caption: 'Event Host', placeholder: 'Photo coming soon' },
-    { src: eoyGuestSpeaker, alt: 'A smiling speaker at a Binghamton University podium beside a Guest Speaker slide showing an Amazon logo', caption: 'Guest Speaker', placeholder: 'Photo coming soon' },
-    { src: eoyFoundersAddress, alt: 'A speaker at a Binghamton University podium beside a Founders Address slide, with guests seated in the foreground', caption: 'Founder', placeholder: 'Photo coming soon' },
-  ],
-  // Same names as the Projects page track filters
-  teams: [
     {
-      src: aiTeam, alt: 'Four AI team members in business attire standing in front of the End of Year Banquet screen', caption: 'AI', placeholder: 'Team photo coming soon',
-      more: [
-        { src: aiTeamSlides1, alt: 'AI team members presenting a VLM slide at the banquet, one speaking at the podium' },
-        { src: aiTeamSlides2, alt: 'AI team members presenting their Ink2Pixel title slide at the banquet' },
+      role: 'Event Host', name: 'Angelina Ponce', title: 'Founder & Senior Advisor',
+      src: eoyHost, alt: 'Angelina Ponce speaking at a Binghamton University podium beside an End of Year Banquet slide, with guests seated at banquet tables in the foreground', placeholder: 'Photo coming soon',
+      headshot: { src: angelinaHeadshot, alt: 'Headshot of Angelina Ponce in a black blazer against an orange backdrop', position: '50% 30%' },
+      // From her career-highlights slide (the slide names Brightshore Capital for the private equity role)
+      achievements: [
+        { text: 'Private Equity Summer Analyst at Brightshore Capital', company: 'Brightshore Capital' },
+        { text: 'Asset Management Summer Analyst at CPC (The Community Preservation Corporation)', company: 'The Community Preservation Corporation', chipLabel: 'CPC' },
+        { text: 'HackMIT 2025 and 2026', company: 'HackMIT' },
+        { text: 'ColorStack StackedUp Summit 2025 and 2026', company: 'ColorStack' },
       ],
     },
-    { src: cyberSecurityTeam, alt: 'Four Cyber Security team members smiling in front of the End of Year Banquet screen', caption: 'Cyber Security', placeholder: 'Team photo coming soon' },
-    { src: webDevTeam, alt: 'Four Web Dev team members in suits posing in front of the End of Year Banquet screen', caption: 'Web Dev', placeholder: 'Team photo coming soon' },
     {
-      src: recreatingAppsTeam, alt: 'Three Recreating Apps team members standing in a lounge beside a stone fireplace', caption: 'Recreating Apps', placeholder: 'Team photo coming soon',
+      role: 'Guest Speaker', name: 'Hamid Ajose', title: 'Founding Enterprise ADR, Ex AWS',
+      src: eoyGuestSpeaker, alt: 'Hamid Ajose smiling at a Binghamton University podium beside a Guest Speaker slide showing an Amazon logo', placeholder: 'Photo coming soon',
+      headshot: { src: hamidHeadshot, alt: 'Headshot of Hamid Ajose smiling in a black shirt against a light gray backdrop', position: '50% 25%' },
+      achievements: [
+        { text: 'Founding Enterprise ADR at Euno', detail: 'Full-time · Apr 2026 – Present · New York City Metropolitan Area', current: true, company: 'Euno' },
+        // Event slide wording; LinkedIn lists it as SDE Intern at Amazon
+        { text: 'Software Development Engineer Intern @ Amazon Web Services', detail: 'SDE Intern at Amazon · May 2025 – Sep 2025 · Palo Alto, California', company: 'Amazon', logo: 'Amazon' },
+      ],
+    },
+    {
+      role: 'Founding President', name: 'David Ponce', title: 'Founding President',
+      src: eoyFoundersAddress, alt: 'David Ponce speaking at a Binghamton University podium beside a Founders Address slide, with guests seated in the foreground', placeholder: 'Photo coming soon',
+      headshot: { sanityFounder: 'David Ponce', alt: 'Headshot of David Ponce', position: '50% 25%' },
+      achievements: [
+        { text: 'Technology consulting at Brightshore Capital', current: true, company: 'Brightshore Capital' },
+        { text: "Pursuing a Master's in Computer Science at NYU Tandon School of Engineering", current: true, company: 'NYU Tandon School of Engineering', chipLabel: 'NYU Tandon' },
+        { text: "3rd place at HackMIT '25, Infosys Top Sponsor Challenge", company: 'Infosys', logo: 'Infosys' },
+        { text: 'Pursued published research on adversarial defenses against deepfake audio with Intel Corporation', company: 'Intel', logo: 'Intel' },
+        { text: 'Former 2x NCAA Division 1 Swim & Dive Captain' },
+        { text: 'Software Development Intern at NeuralSeek', detail: 'May 2026 – Aug 2026 · Remote', company: 'NeuralSeek' },
+        { text: 'Technician, Program Development at Emerging Technology Studio, Binghamton University', detail: 'Mar 2024 – May 2026', company: 'Emerging Technology Studio', chipLabel: 'Emerging Tech Studio' },
+      ],
+    },
+  ],
+  // Full team names (the Projects page filters keep their short Sanity names)
+  teams: [
+    {
+      src: aiTeam, alt: 'Four AI/ML team members in business attire standing in front of the End of Year Banquet screen', caption: 'AI/ML', placeholder: 'Team photo coming soon',
       more: [
-        { src: recreatingAppsSlides1, alt: 'Recreating Apps team members presenting the B-Ranked tier list app on a large screen at the banquet' },
-        { src: recreatingAppsSlides2, alt: 'Recreating Apps team members presenting a User Sign Up & Authentication slide at the banquet' },
+        { src: aiTeamSlides1, alt: 'AI/ML team members presenting a VLM slide at the banquet, one speaking at the podium' },
+        { src: aiTeamSlides2, alt: 'AI/ML team members presenting their Ink2Pixel title slide at the banquet' },
+      ],
+    },
+    { src: cyberSecurityTeam, alt: 'Four Cybersecurity team members smiling in front of the End of Year Banquet screen', caption: 'Cybersecurity', placeholder: 'Team photo coming soon' },
+    { src: webDevTeam, alt: 'Four Website Development team members in suits posing in front of the End of Year Banquet screen', caption: 'Website Development', placeholder: 'Team photo coming soon' },
+    {
+      src: recreatingAppsTeam, alt: 'Three Recreating Applications team members standing in a lounge beside a stone fireplace', caption: 'Recreating Applications', placeholder: 'Team photo coming soon',
+      more: [
+        { src: recreatingAppsSlides1, alt: 'Recreating Applications team members presenting the B-Ranked tier list app on a large screen at the banquet' },
+        { src: recreatingAppsSlides2, alt: 'Recreating Applications team members presenting a User Sign Up & Authentication slide at the banquet' },
       ],
     },
   ],
