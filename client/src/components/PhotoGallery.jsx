@@ -6,8 +6,9 @@ import Lightbox from './Lightbox'
 
 /**
  * Photos-only gallery. The first photo is a featured hero (wide, centred, gold-framed); the rest
- * fill a grid below it: 2 columns on phones and tablets, 4 on desktop. Rows wrap centred, so a
- * short last row sits in the middle instead of leaving a gap. One shared lightbox steps through
+ * fill a grid below it: 2 columns on phones and tablets, 4 on desktop; exactly three make one row of
+ * three (stacked on phones). Rows wrap centred, so a short last row sits in the middle instead of
+ * leaving a gap. One shared lightbox steps through
  * every photo that actually loaded, the featured one included (placeholders and failures are skipped).
  */
 export default function PhotoGallery({ photos, aspect = 'aspect-[3/2]', featuredAspect = 'aspect-[16/9]' }) {
@@ -22,6 +23,10 @@ export default function PhotoGallery({ photos, aspect = 'aspect-[3/2]', featured
 
   const current = openAt !== null ? photos[viewable[openAt]] : null
   const [featured, ...rest] = photos
+  // Three photos sit as one even row of three (stacked on phones); otherwise 2 columns, 4 on desktop
+  const tileWidth = rest.length === 3
+    ? 'w-full sm:w-[calc((100%-3rem)/3)]'
+    : 'w-[calc((100%-1rem)/2)] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]'
   const slotProps = (i) => ({
     onOpen: () => setOpenAt(viewable.indexOf(i)),
     onError: () => setBroken((b) => new Set(b).add(i)),
@@ -41,7 +46,7 @@ export default function PhotoGallery({ photos, aspect = 'aspect-[3/2]', featured
             <Reveal
               key={j + 1}
               delay={(j % 4) * 0.08}
-              className="w-[calc((100%-1rem)/2)] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]"
+              className={tileWidth}
             >
               <PhotoSlot photo={photo} aspect={aspect} {...slotProps(j + 1)} />
             </Reveal>

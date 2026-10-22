@@ -8,7 +8,7 @@ const menuItems = [
   { label: 'About',    ariaLabel: 'About us',       link: '/about' },
   { label: 'E-Board',  ariaLabel: 'View E-Board',   link: '/eboard' },
   { label: 'Events',   ariaLabel: 'View events',    link: '/events' },
-  { label: 'Past Events', ariaLabel: 'View past events', link: '/past-events' },
+  { label: 'Community', ariaLabel: 'View community events', link: '/community' },
   { label: 'Contact',  ariaLabel: 'Contact us',     link: '/contact' },
 ]
 

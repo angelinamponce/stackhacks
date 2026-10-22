@@ -51,7 +51,7 @@ export const eboardDetails = {
         chipLabel: "SEO",
       },
       {
-        company: "The Community Preservation Corporation",
+        company: "CPC",
         role: "2026 Asset Management Summer Analyst",
         type: "Internship",
         start: "2026-06",

@@ -11,11 +11,11 @@ import hackMadnessBg from '../assets/events/backdrop/hack-madness-group-bg.jpg'
 const BACKDROPS = [eoyGroupBg, workshopBg, hackMadnessBg]
 
 /**
- * Full-screen landing for the Past Events tab: one screen tall (below the fixed nav), a slow
+ * Full-screen landing for the Community tab: one screen tall (below the fixed nav), a slow
  * crossfading photo backdrop, framed by circuit corners, with jump chips to each section and
  * a scroll cue. `sections` is [{ id, label }]; `facts` is [{ value, label }] derived from data.
  */
-export default function PastEventsHero({ sections, facts = [] }) {
+export default function CommunityHero({ sections, facts = [] }) {
   const reduce = useReducedMotion()
   const jump = (e, id) => {
     const target = document.getElementById(id)
@@ -25,11 +25,11 @@ export default function PastEventsHero({ sections, facts = [] }) {
   }
 
   return (
-    <section aria-labelledby="past-events-title" className="pe-hero relative isolate flex items-center justify-center overflow-hidden border-b border-white/[0.08]">
+    <section aria-labelledby="community-title" className="community-hero relative isolate flex items-center justify-center overflow-hidden border-b border-white/[0.08]">
       {/* Backdrop: dim, blurred, slowly drifting and crossfading event photos */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         {BACKDROPS.map((src, i) => (
-          <div key={src} className="pe-backdrop" style={{ backgroundImage: `url(${src})`, '--pe-delay': `${i * 9 - 2}s` }} />
+          <div key={src} className="community-backdrop" style={{ backgroundImage: `url(${src})`, '--backdrop-delay': `${i * 9 - 2}s` }} />
         ))}
         {/* Soft gold glow, then edges fading into the page background */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_45%,rgba(254,178,58,0.14),transparent_70%)]" />
@@ -46,8 +46,8 @@ export default function PastEventsHero({ sections, facts = [] }) {
 
         <Reveal delay={0.1} className="relative mt-5">
           <div aria-hidden="true" className="pointer-events-none absolute -inset-x-10 -inset-y-6 -z-10 rounded-full bg-accent/15 blur-3xl" />
-          <h1 id="past-events-title" className="text-[clamp(2.75rem,10vw,7.5rem)] font-semibold leading-[0.95] tracking-tight text-primary">
-            Past <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">Events</span>
+          <h1 id="community-title" className="text-[clamp(2.75rem,10vw,7.5rem)] font-semibold leading-[1.05] tracking-tight bg-gradient-to-b from-primary via-[#ffe2a8] to-accent bg-clip-text text-transparent">
+            Community
           </h1>
         </Reveal>
 

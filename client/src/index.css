@@ -495,14 +495,14 @@ main, .circuit-board { transition: opacity 0.7s ease; }
 /* Deep-linked project card (Projects.jsx): brief gold highlight */
 li[data-highlight] article { box-shadow: 0 0 0 2px rgba(254, 178, 58, 0.85), 0 0 48px -8px rgba(254, 178, 58, 0.7); transition: box-shadow 0.4s ease; }
 
-/* ── Past Events landing hero (components/PastEventsHero.jsx) ── */
-.pe-hero {
+/* ── Community landing hero (components/CommunityHero.jsx) ── */
+.community-hero {
   min-height: calc(100vh - 4rem);
   min-height: calc(100svh - 4rem);
   scroll-margin-top: 4rem;
 }
 /* Three dim, blurred event photos: each drifts slowly (Ken Burns) and they crossfade on a 27s loop */
-.pe-backdrop {
+.community-backdrop {
   position: absolute;
   inset: -6%;
   background-size: cover;
@@ -510,24 +510,24 @@ li[data-highlight] article { box-shadow: 0 0 0 2px rgba(254, 178, 58, 0.85), 0 0
   filter: blur(6px) brightness(0.14) saturate(0.85);
   opacity: 0;
   will-change: transform, opacity;
-  animation: pe-crossfade 27s linear infinite, pe-drift 27s ease-in-out infinite;
-  animation-delay: var(--pe-delay, 0s), var(--pe-delay, 0s);
+  animation: community-crossfade 27s linear infinite, community-drift 27s ease-in-out infinite;
+  animation-delay: var(--backdrop-delay, 0s), var(--backdrop-delay, 0s);
 }
-@keyframes pe-crossfade {
+@keyframes community-crossfade {
   0%   { opacity: 0; }
   7%   { opacity: 1; }
   33%  { opacity: 1; }
   41%  { opacity: 0; }
   100% { opacity: 0; }
 }
-@keyframes pe-drift {
+@keyframes community-drift {
   0%, 100% { transform: scale(1.06) translate3d(-1.5%, -1%, 0); }
   50%      { transform: scale(1.14) translate3d(1.5%, 1%, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   /* Static backdrop: just the first photo, no drift or crossfade */
-  .pe-backdrop { animation: none; transform: scale(1.06); }
-  .pe-backdrop:first-child { opacity: 1; }
+  .community-backdrop { animation: none; transform: scale(1.06); }
+  .community-backdrop:first-child { opacity: 1; }
 }
 
 /* About stats cards: shine sweep on hover (reuses .card-shine) */

@@ -58,8 +58,8 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/past-events" className="hover:text-primary transition-colors">
-                  Past Events
+                <Link to="/community" className="hover:text-primary transition-colors">
+                  Community
                 </Link>
               </li>
               <li>

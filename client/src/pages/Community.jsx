@@ -5,9 +5,9 @@ import { client } from '../sanityClient'
 import { Reveal } from '../components/Interactive'
 import PhotoSlot from '../components/PhotoSlot'
 import PhotoGallery from '../components/PhotoGallery'
-import PastEventsHero from '../components/PastEventsHero'
+import CommunityHero from '../components/CommunityHero'
 import SpeakerPanel from '../components/SpeakerPanel'
-import { ceremony, generalBody, hackMadness } from '../data/pastEvents'
+import { ceremony, generalBody, hackMadness } from '../data/community'
 
 function SectionHeading({ id, eyebrow, title, intro }) {
   return (
@@ -57,7 +57,7 @@ function SpeakerRow({ speakers: data }) {
     client
       .fetch(`*[_type == "founder" && name in $names]{ name, "image": image.asset->url }`, { names })
       .then((rows) => {
-        const urls = Object.fromEntries((rows || []).filter((r) => r.image).map((r) => [r.name, `${r.image}?w=480&h=480&fit=crop&auto=format`]))
+        const urls = Object.fromEntries((rows || []).filter((r) => r.image).map((r) => [r.name, `${r.image}?w=600&h=800&fit=crop&auto=format`]))
         setSpeakers(data.map((s) => (urls[s.headshot?.sanityFounder] ? { ...s, headshot: { ...s.headshot, src: urls[s.headshot.sanityFounder] } } : s)))
       })
       .catch(() => {}) // the panel falls back to initials
@@ -106,21 +106,13 @@ const SECTIONS = [
   { id: 'hack-madness', label: 'Hack Madness' },
 ]
 
-// Hero facts, counted from the data file (nothing hardcoded)
-const allPhotos = [
-  ceremony.groupPhoto, ...ceremony.speakers, ...ceremony.teams, ...ceremony.teams.flatMap((t) => t.more || []),
-  ...generalBody.photos, ...hackMadness.photos,
-]
-const FACTS = [
-  { value: SECTIONS.length, label: 'event types' },
-  { value: ceremony.teams.length, label: 'project teams' },
-  { value: allPhotos.filter((p) => p.src).length, label: 'photos' },
-]
+// Hero fact, counted from the data file (nothing hardcoded)
+const FACTS = [{ value: ceremony.teams.length, label: 'project teams' }]
 
-const PastEvents = () => {
+const Community = () => {
   return (
     <div className="relative">
-      <PastEventsHero sections={SECTIONS} facts={FACTS} />
+      <CommunityHero sections={SECTIONS} facts={FACTS} />
 
       <div className="max-w-6xl mx-auto px-6">
         {/* ── A. End of Year Ceremony ── */}
@@ -216,4 +208,4 @@ const PastEvents = () => {
   )
 }
 
-export default PastEvents
+export default Community

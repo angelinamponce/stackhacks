@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import ScrollToTop from './components/ScrollToTop'
 import { ScrollProgress } from './components/Interactive'
@@ -12,12 +12,12 @@ import Projects from './pages/Projects'
 import About from './pages/About'
 import Eboard from './pages/Eboard'
 import Events from './pages/Events'
-import PastEvents from './pages/PastEvents'
+import Community from './pages/Community'
 import Contact from './pages/Contact'
 import SanityRedirect from './pages/SanityRedirect'
 
 function App() {
-  const { pathname } = useLocation()
+  const { pathname, hash } = useLocation()
   useScreenSections(pathname)
 
   // Lets CSS pause decorative animations while the browser tab is hidden
@@ -42,7 +42,9 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/eboard" element={<Eboard />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/past-events" element={<PastEvents />} />
+          <Route path="/community" element={<Community />} />
+          {/* Old URL: keeps existing links (and #section anchors) working */}
+          <Route path="/past-events" element={<Navigate to={{ pathname: '/community', hash }} replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/sanity" element={<SanityRedirect />} />
           <Route path="/studio" element={<SanityRedirect />} />

@@ -12,6 +12,10 @@ import recreatingAppsTeam from '../assets/events/recreating-apps-team.jpg'
 import recreatingAppsSlides1 from '../assets/events/recreating-apps-slides-1.jpg'
 import recreatingAppsSlides2 from '../assets/events/recreating-apps-slides-2.jpg'
 import workshop1 from '../assets/events/workshop-1.jpg'
+import workshop2 from '../assets/events/workshop-2.jpg'
+import workshop3 from '../assets/events/workshop-3.jpg'
+import workshop4 from '../assets/events/workshop-4.jpg'
+import communityDay from '../assets/events/community-day.jpg'
 import hackMadnessGroup from '../assets/events/hack-madness-group.jpg'
 import hackMadness1 from '../assets/events/hack-madness-1.jpg'
 import hackMadness2 from '../assets/events/hack-madness-2.jpg'
@@ -20,7 +24,7 @@ import hackMadness4 from '../assets/events/hack-madness-4.jpg'
 import angelinaHeadshot from '../assets/events/angelina-ponce-headshot.jpg'
 import hamidHeadshot from '../assets/events/hamid-ajose-headshot.jpg'
 
-// Past Events page content. Photos are one entry per slot:
+// Community page content. Photos are one entry per slot:
 //   { src, alt, caption, placeholder, position, more }
 //   src          image import; null shows the "coming soon" placeholder instead
 //   alt          describes only what is visible in the photo (no names)
@@ -56,7 +60,7 @@ export const ceremony = {
       // From her career-highlights slide (the slide names Brightshore Capital for the private equity role)
       achievements: [
         { text: 'Private Equity Summer Analyst at Brightshore Capital', company: 'Brightshore Capital' },
-        { text: 'Asset Management Summer Analyst at CPC (The Community Preservation Corporation)', company: 'The Community Preservation Corporation', chipLabel: 'CPC' },
+        { text: 'Asset Management Summer Analyst at CPC', company: 'CPC' },
         { text: 'HackMIT 2025 and 2026', company: 'HackMIT' },
         { text: 'ColorStack StackedUp Summit 2025 and 2026', company: 'ColorStack' },
       ],
@@ -112,9 +116,12 @@ export const generalBody = {
     'Throughout the year, we host general body meetings and interactive workshops tailored to skill-building and community engagement.',
   photos: [
     { src: workshop1, alt: 'A large group of StackHacks members posing in a classroom in front of a projected StackHacks title slide', placeholder: 'Photo coming soon' },
-    // Only one workshop photo so far; these two stay as placeholders
-    { src: null, alt: 'Project demo at a StackHacks general body meeting', placeholder: 'Photo coming soon' },
-    { src: null, alt: 'Networking Q&A at a StackHacks event', placeholder: 'Photo coming soon' },
+    { src: workshop2, alt: 'StackHacks general body meeting: a packed classroom of members posing in front of a projected StackHacks title slide', placeholder: 'Photo coming soon' },
+    { src: workshop3, alt: 'StackHacks general body workshop: members seated at classroom desks with laptops, facing the front of the room', placeholder: 'Photo coming soon' },
+    // Second row
+    { src: workshop4, alt: 'A presenter beside a projected Internship slide, speaking to members seated at classroom desks', placeholder: 'Photo coming soon', position: '50% 60%' },
+    { src: communityDay, alt: 'StackHacks members guiding children through a hands-on pegboard activity at a community day', placeholder: 'Photo coming soon' },
+    { src: hackMadness2, alt: 'Participants seated at laptops smiling at the camera during Hack Madness', placeholder: 'Photo coming soon' },
   ],
 }
 
@@ -143,9 +150,8 @@ export const hackMadness = {
   // Gallery: photos only, no captions. The first photo is the featured hero; the rest fill the grid below.
   photos: [
     { src: hackMadnessGroup, alt: 'Hack Madness participants posing together in a classroom in front of the projected Hack Madness title slide', position: '50% 70%' },
-    { src: hackMadness1, alt: 'Three participants smiling together by a sunlit window during Hack Madness' },
-    { src: hackMadness2, alt: 'Participants seated at laptops smiling at the camera during Hack Madness' },
     { src: hackMadness3, alt: 'Participants concentrating on their laptops during Hack Madness' },
+    { src: hackMadness1, alt: 'Three participants smiling together by a sunlit window during Hack Madness' },
     { src: hackMadness4, alt: 'A classroom full of participants working on laptops during Hack Madness' },
   ],
 }
