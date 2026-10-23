@@ -23,6 +23,7 @@ import hackMadness3 from '../assets/events/hack-madness-3.jpg'
 import hackMadness4 from '../assets/events/hack-madness-4.jpg'
 import angelinaHeadshot from '../assets/events/angelina-ponce-headshot.jpg'
 import hamidHeadshot from '../assets/events/hamid-ajose-headshot.jpg'
+import davidHeadshot from '../assets/events/david-ponce-headshot.jpg'
 // Official logos, downloaded from each organization's own website (stored locally, not hotlinked)
 import brightshoreLogo from '../assets/logos/brightshore.svg'
 import cpcLogo from '../assets/logos/cpc.png'
@@ -87,7 +88,7 @@ export const ceremony = {
     {
       role: 'Founding President', name: 'David Ponce', title: 'Founding President',
       src: eoyFoundersAddress, alt: 'David Ponce speaking at a Binghamton University podium beside a Founders Address slide, with guests seated in the foreground', placeholder: 'Photo coming soon',
-      headshot: { sanityFounder: 'David Ponce', alt: 'Headshot of David Ponce', position: '50% 25%' },
+      headshot: { src: davidHeadshot, alt: 'Headshot of David Ponce in a white shirt against a coral backdrop', position: '50% 25%' },
       achievements: [
         { text: 'Technology consulting at Brightshore Capital', current: true, company: 'Brightshore Capital', logoSrc: brightshoreLogo, logoTone: 'light' },
         { text: "Pursuing a Master's in Computer Science at NYU Tandon School of Engineering", current: true, company: 'NYU Tandon School of Engineering', chipLabel: 'NYU Tandon' },

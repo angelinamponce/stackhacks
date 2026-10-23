@@ -9,6 +9,7 @@ import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users } from 'lu
 import CornerTraces from '../components/os/CornerTraces'
 // A closer crop of her headshot, so her face fills the card like the others
 import angelinaHeadshot from '../assets/events/angelina-ponce-headshot-close.jpg'
+import davidHeadshot from '../assets/events/david-ponce-headshot.jpg'
 import LoadError from '../components/LoadError'
 
 // Founders hidden from the carousel (matched case-insensitively on name).
@@ -20,7 +21,7 @@ const FOUNDER_ORDER = ['david ponce', 'jack hunter', 'angelina ponce', 'hilary r
 // Title overrides until the Sanity founder "Position" field is updated (then these can be removed)
 const FOUNDER_TITLES = { 'jack hunter': 'Chief Technology Officer & Co-Founder' }
 // Local headshot replacements, until the photo is replaced in the Studio
-const FOUNDER_IMAGES = { 'angelina ponce': angelinaHeadshot }
+const FOUNDER_IMAGES = { 'angelina ponce': angelinaHeadshot, 'david ponce': davidHeadshot }
 const founderKey = (f) => f.name?.trim().toLowerCase()
 const rank = (f) => { const i = FOUNDER_ORDER.indexOf(founderKey(f)); return i === -1 ? FOUNDER_ORDER.length : i }
 
