@@ -46,7 +46,7 @@ export default function CommunityHero({ sections, facts = [] }) {
 
         <Reveal delay={0.1} className="relative mt-5">
           <div aria-hidden="true" className="pointer-events-none absolute -inset-x-10 -inset-y-6 -z-10 rounded-full bg-accent/15 blur-3xl" />
-          <h1 id="community-title" className="text-[clamp(2.75rem,10vw,7.5rem)] font-semibold leading-[1.05] tracking-tight bg-gradient-to-b from-primary via-[#ffe2a8] to-accent bg-clip-text text-transparent">
+          <h1 id="community-title" className="page-title bg-gradient-to-b from-primary via-[#ffe2a8] to-accent bg-clip-text text-transparent pb-1">
             Community
           </h1>
         </Reveal>

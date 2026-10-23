@@ -55,6 +55,9 @@ function Corner({ corner, animated, uid }) {
  * @param animated  travelling light pulses + glowing nodes (static for reduced motion via CSS)
  * @param drawIn    traces draw themselves in once on mount
  */
+// Off in the editorial restyle (no circuit decorations). Set to false to bring the corners back.
+const OFF = true
+
 export default function CircuitTraces({ corners = ['tl', 'tr', 'bl', 'br'], animated = true, drawIn = false, className = '' }) {
   const ref = useRef(null)
   const uid = `ct${useId().replace(/[^a-zA-Z0-9]/g, '')}`
@@ -71,6 +74,7 @@ export default function CircuitTraces({ corners = ['tl', 'tr', 'bl', 'br'], anim
     return () => io.disconnect()
   }, [animated])
 
+  if (OFF) return null
   return (
     <div
       ref={ref}

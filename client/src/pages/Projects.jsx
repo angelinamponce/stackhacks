@@ -101,7 +101,7 @@ const Projects = () => {
     <div data-circuit-section className="screen-section w-full max-w-6xl mx-auto px-6">
       <Reveal className="text-center max-w-2xl mx-auto mb-10 space-y-4">
         <span className="eyebrow">Showcase</span>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary">Member Projects</h1>
+        <h1 className="page-title text-primary">Member <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">Projects</span></h1>
         <p className="text-secondary text-base sm:text-lg leading-relaxed">
           Real-world applications, tools, and platforms engineered by StackHacks project teams throughout the academic year.
         </p>

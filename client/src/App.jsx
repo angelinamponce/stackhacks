@@ -3,10 +3,11 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import ScrollToTop from './components/ScrollToTop'
 import { ScrollProgress } from './components/Interactive'
-import CircuitBoard from './components/os/CircuitBoard'
 import IntroSplash from './components/IntroSplash'
 import { useScreenSections } from './lib/screenSections'
 import Footer from './components/Footer'
+import CircuitBoard from './components/os/CircuitBoard'
+import ShootingStars from './components/ShootingStars'
 import Home from './pages/Home'
 import Projects from './pages/Projects'
 import About from './pages/About'
@@ -30,7 +31,9 @@ function App() {
   return (
     <div className="relative min-h-screen flex flex-col bg-background text-primary selection:bg-accent/30 selection:text-white">
       <IntroSplash />
+      {/* Faint page-level circuit lines and rare shooting stars, behind all content */}
       <CircuitBoard />
+      <ShootingStars />
       <ScrollToTop />
       <Navbar />
       <ScrollProgress />

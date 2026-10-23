@@ -1,10 +1,14 @@
 import { RingNode, TraceLine } from './CircuitParts'
 
+const OFF = true
+
 /**
  * Thin circuit-trace corner accent (top-left + mirrored bottom-right) for cards.
  * `show` lights it (e.g. the selected founder); `hover` lights it on parent `.group` hover.
  */
 export default function CornerTraces({ show = false, hover = false }) {
+  // Off in the editorial restyle (no circuit decorations). Delete this line to bring them back.
+  if (OFF) return null
   const visibility = show ? 'opacity-100' : hover ? 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' : 'opacity-0'
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute inset-0 z-20 transition-opacity duration-500 ${visibility}`}>

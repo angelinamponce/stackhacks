@@ -104,7 +104,7 @@ export function ProjectModal({ project, details = {}, onClose }) {
       >
         <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
 
-        <div className="m-4 sm:m-6 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-black p-6">
+        <div className="m-4 sm:m-6 aspect-[16/9] overflow-hidden rounded-md border border-white/10 bg-black p-6">
           <Cover project={project} />
         </div>
 
@@ -166,10 +166,10 @@ export default function ProjectCard({ project, details, featured = false, onOpen
   return (
     <article
       {...spotlightHandlers}
-      className={`group spotlight spotlight-border relative flex h-full overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#18181b] to-[#111113]
-        shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_30px_60px_-30px_rgba(0,0,0,0.8)]
-        transition-[translate,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-white/15
-        hover:shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_30px_60px_-24px_rgba(0,0,0,0.9),0_0_40px_-16px_rgba(254,178,58,0.45)]
+      className={`group spotlight spotlight-border relative flex h-full overflow-hidden rounded-[3px] border border-[#D4AF37]/55 bg-gradient-to-b from-[#161617] to-[#0f0f10]
+        shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)]
+        transition-[translate,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-[#D4AF37]
+        hover:shadow-[0_30px_60px_-24px_rgba(0,0,0,0.9)]
         ${featured ? "flex-col md:flex-row" : "flex-col"}`}
     >
       {/* Image */}
@@ -210,7 +210,7 @@ export default function ProjectCard({ project, details, featured = false, onOpen
         type="button"
         onClick={onOpen}
         aria-label={`Open ${project.title} details`}
-        className="absolute inset-0 z-0 cursor-pointer rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
+        className="absolute inset-0 z-0 cursor-pointer rounded-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
       />
     </article>
   )

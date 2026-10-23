@@ -1,20 +1,28 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { client } from '../sanityClient'
 import { CircularDisplay } from '../components/CircularDisplay'
 import FoundersCarousel from '../components/FoundersCarousel'
-import { CountUp, Reveal } from '../components/Interactive'
+import { CountUp, Reveal, Hairline, STAGGER } from '../components/Interactive'
 import { spotlightHandlers } from '../lib/pointer'
-import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users, Building2 } from 'lucide-react'
+import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users } from 'lucide-react'
 import CornerTraces from '../components/os/CornerTraces'
 import LoadError from '../components/LoadError'
 
 // Founders hidden from the carousel (matched case-insensitively on name).
 const EXCLUDED_FOUNDERS = ['shahida chowdhury']
+// Founders are ordered by creation date in Sanity (there's no order field), so the display order
+// is set here: these names lead, everyone else follows in their Sanity order.
+const FOUNDER_ORDER = ['david ponce', 'jack hunter', 'angelina ponce']
+// Title overrides until the Sanity founder "Position" field is updated (then these can be removed)
+const FOUNDER_TITLES = { 'jack hunter': 'Chief Technology Officer & Co-Founder' }
+const founderKey = (f) => f.name?.trim().toLowerCase()
+const rank = (f) => { const i = FOUNDER_ORDER.indexOf(founderKey(f)); return i === -1 ? FOUNDER_ORDER.length : i }
 
 const SECTIONS = [
   { id: 'story', label: 'Our Story' },
   { id: 'founders', label: 'Founders' },
+  { id: 'origins', label: 'Origins' },
   { id: 'get-involved', label: 'Get Involved' },
 ]
 
@@ -96,7 +104,7 @@ function SectionNav() {
               <a
                 href={`#${id}`}
                 aria-current={isActive ? 'location' : undefined}
-                className={`relative isolate block rounded-full px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors duration-300 ${
+                className={`relative isolate block whitespace-nowrap rounded-full px-2.5 sm:px-4 py-1.5 text-[11px] sm:text-sm font-medium transition-colors duration-300 ${
                   isActive ? 'text-black' : 'text-secondary hover:text-primary'
                 }`}
               >
@@ -146,13 +154,13 @@ const About = () => {
             "projects": count(*[_type == "project"]),
             "events": count(*[_type == "event"]),
             "leaders": count(*[_type == "eboard"]),
-            "partners": count(*[_type == "company"]),
           }`),
         ])
         setFounders(
-          (foundersData || []).filter(
-            (f) => !EXCLUDED_FOUNDERS.includes(f.name?.trim().toLowerCase())
-          )
+          (foundersData || [])
+            .filter((f) => !EXCLUDED_FOUNDERS.includes(founderKey(f)))
+            .map((f, i) => ({ ...f, position: FOUNDER_TITLES[founderKey(f)] || f.position, _i: i }))
+            .sort((a, b) => rank(a) - rank(b) || a._i - b._i)
         )
         setAbout(aboutData?.length ? aboutData : fallbackAbout)
         setStats(counts)
@@ -172,7 +180,6 @@ const About = () => {
         { label: 'Active Projects', value: stats.projects, icon: Layers },
         { label: 'Events Hosted', value: stats.events, icon: CalendarDays },
         { label: 'Student Leaders', value: stats.leaders, icon: Users },
-        { label: 'Companies Represented', value: stats.partners, icon: Building2 },
       ].filter((s) => s.value > 0)
     : []
 
@@ -198,9 +205,9 @@ const About = () => {
                   as="li"
                   key={stat.label}
                   delay={i * 0.08}
-                  className="w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3.75rem)/4)]"
+                  className="w-[calc((100%-1.5rem)/3)] sm:w-[calc((100%-2.5rem)/3)]"
                 >
-                  <StatCard stat={stat} />
+                  <StatCard stat={stat} index={i} />
                 </Reveal>
               ))}
             </ul>
@@ -226,6 +233,28 @@ const About = () => {
           )}
         </section>
 
+        {/* ── Our Origins ── */}
+        <section id="origins" className="screen-section space-y-10">
+          <Hairline />
+          <SectionHeading eyebrow="Our Origins" title="Where StackHacks Began" />
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,760px)_minmax(0,1fr)] lg:items-center lg:gap-16">
+            {/* Copy can move to Sanity later (see report); hardcoded for now */}
+            {/* Sizes sit on each paragraph: the base p rule in index.css would override inherited sizes */}
+            <div className="max-w-[760px] space-y-5">
+              <Reveal as="p" className="text-[1.25rem] sm:text-[1.35rem] leading-[1.65] text-primary/90">
+                StackHacks originated in 2023 as an idea conceived by <span className="hl">David Ponce</span> during his tenure as Project Manager for <span className="hl">ColorStack</span>. As interest rapidly grew, the initiative expanded into an independent organization. With key contributions from <span className="hl">ColorStack</span>’s Founding President <span className="hl">Julian Ortiz</span>, alongside <span className="hl">Jack Hunter</span>, <span className="hl">Angelina Ponce</span>, and a dedicated founding E-Board, StackHacks quickly emerged as the fastest-growing and largest Computer Science organization at Binghamton University.
+              </Reveal>
+              <Reveal as="p" delay={STAGGER * 2} className="text-[1.25rem] sm:text-[1.35rem] leading-[1.65] text-primary/90">
+                We welcome a wide spectrum of ambitious students, from driven first-years with zero coding experience to master’s students looking to collaborate on high-level builds. Today, we empower underrepresented students and allies with hands-on, real-world technical experience through our selective Project Division (averaging <span className="hl">over 60 applicants</span> per cycle with a <span className="hl">35% acceptance rate</span>) and foster leadership growth through our Spring Internship Program. Beyond technical work, community is at our core: we regularly organize group trips to nationally recognized hackathons, including HackMIT, HackHarvard, YHack, and HackPrinceton.
+              </Reveal>
+              <Reveal as="p" delay={STAGGER * 4} className="text-[1.25rem] sm:text-[1.35rem] leading-[1.65] text-primary/90">
+                What began as a simple idea shared between four passionate visionaries has grown into a vibrant, supportive, and close-knit family. Together, we continue to empower driven students to learn, build, and succeed side-by-side.
+              </Reveal>
+            </div>
+            <OriginsSteps />
+          </div>
+        </section>
+
         {/* ── How to Get Involved ── */}
         <section id="get-involved" className="screen-section space-y-10">
           <SectionHeading eyebrow="Join the Community" title="How to Get Involved" />
@@ -236,7 +265,7 @@ const About = () => {
             {/* Thin gold thread linking the steps on desktop */}
             <div className="pointer-events-none absolute left-8 right-8 top-[3.25rem] hidden h-px bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 lg:block" />
             {getInvolvedSteps.map((step, i) => (
-              <Reveal as="li" key={step.step} delay={i * 0.1}>
+              <Reveal as="li" key={step.step} delay={i * STAGGER}>
                 <StepCard step={step} />
               </Reveal>
             ))}
@@ -248,12 +277,58 @@ const About = () => {
   )
 }
 
-/** One About stat: gold icon, count-up number, underline accent and label in a glass card. */
-function StatCard({ stat }) {
-  const Icon = stat.icon
+const ORIGIN_STEPS = [
+  { label: 'Began in 2023', title: 'An idea within ColorStack' },
+  { label: 'Grew into', title: 'An independent organization' },
+  { label: 'Today', title: "Binghamton's largest Computer Science organization" },
+]
+
+/** Two-step origin visual: ring nodes joined by a thin gold line that draws in on scroll. */
+function OriginsSteps() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, amount: 0.5 })
+  const reduce = useReducedMotion()
+  const [forced, setForced] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setForced(true), 1600)
+    return () => clearTimeout(id)
+  }, [])
+  const drawn = reduce || inView || forced
   return (
-    <div className="stat-card card-shine group relative h-full overflow-hidden rounded-2xl border border-accent/25 bg-white/[0.025] px-3 py-6 sm:px-6 sm:py-8 text-center shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_28px_-14px_rgba(254,178,58,0.35)] transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_40px_-10px_rgba(254,178,58,0.55),0_24px_44px_-24px_rgba(0,0,0,0.9)]">
+    <ol ref={ref} className="relative space-y-12 pl-11">
+      {/* Track and the gold line drawing down it */}
+      <span aria-hidden="true" className="absolute left-[11px] top-3 bottom-8 w-px bg-white/10" />
+      <span
+        aria-hidden="true"
+        className={`absolute left-[11px] top-3 bottom-8 w-px origin-top bg-gradient-to-b from-accent to-accent/50 transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${drawn ? 'scale-y-100' : 'scale-y-0'}`}
+      />
+      {ORIGIN_STEPS.map((step, i) => (
+        <Reveal as="li" key={step.title} delay={0.2 + i * 0.35} className="relative">
+          <span aria-hidden="true" className="absolute -left-11 top-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-accent/60 bg-background shadow-[0_0_14px_-4px_rgba(254,178,58,0.6)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          </span>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">{step.label}</p>
+          <p className="mt-1.5 text-lg sm:text-xl font-semibold tracking-tight text-primary">{step.title}</p>
+        </Reveal>
+      ))}
+    </ol>
+  )
+}
+
+/** One About stat: gold icon, count-up number, underline accent and label in a glass card. */
+function StatCard({ stat, index = 0 }) {
+  const Icon = stat.icon
+  // Signature moment: a soft gold light sweeps across each card once as the row enters
+  const ref = useRef(null)
+  const entered = useInView(ref, { once: true, amount: 0.6 })
+  return (
+    <div
+      ref={ref}
+      style={{ '--sweep-delay': `${0.15 + index * STAGGER}s` }}
+      className={`stat-card card-shine group ${entered ? 'is-entered' : ''} relative h-full overflow-hidden rounded-2xl border border-accent/25 bg-white/[0.025] px-3 py-6 sm:px-6 sm:py-8 text-center shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_28px_-14px_rgba(254,178,58,0.35)] transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_40px_-10px_rgba(254,178,58,0.55),0_24px_44px_-24px_rgba(0,0,0,0.9)]`}
+    >
       <CornerTraces hover />
+      <span aria-hidden="true" className="stat-sweep" />
       <div className="flex flex-col items-center gap-3">
         <Icon aria-hidden="true" className="h-5 w-5 text-accent" strokeWidth={1.75} />
         <p className="whitespace-nowrap text-[clamp(2.25rem,9vw,3.5rem)] font-semibold leading-none tracking-tight bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">

@@ -436,12 +436,12 @@ const Eboard = () => {
   return (
     <div
       data-circuit-section
-      className="screen-section w-full max-w-6xl mx-auto px-6"
+      className="headings-bold screen-section w-full max-w-6xl mx-auto px-6"
       style={{ paddingTop: 'clamp(56px, 10svh, 120px)' }}
     >
       <Reveal className="text-center max-w-2xl mx-auto mb-10 space-y-3">
         <span className="eyebrow">Leadership Team</span>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary">
+        <h1 className="page-title text-primary">
           Meet the <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">Executive Board</span>
         </h1>
         <p className="text-secondary text-base leading-relaxed">

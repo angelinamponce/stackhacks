@@ -62,7 +62,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
 
   return (
     <div
-      className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center"
+      className="grid grid-cols-1 md:grid-cols-[1.15fr_1fr] gap-10 md:gap-10 lg:gap-14 items-center"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => { setPaused(false); mx.set(0); my.set(0); }}
       onFocus={() => setPaused(true)}
@@ -78,7 +78,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
           onKeyDown={handleKeyDown}
           onPointerMove={handlePointerMove}
           style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1100 }}
-          className="relative mx-auto h-[21rem] sm:h-[25rem] w-full max-w-md [transform-style:preserve-3d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-3xl"
+          className="relative mx-auto h-[22rem] sm:h-[28rem] md:h-[26rem] lg:h-[32rem] xl:h-[34rem] w-full max-w-2xl [transform-style:preserve-3d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-md"
         >
           {/* Ambient gold halo behind the stack */}
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/15 blur-[90px]" />
@@ -103,7 +103,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
                 animate={SLOT_STYLES[slot]}
                 transition={reduce ? { duration: 0 } : SPRING}
                 style={{ pointerEvents: slot === "hidden" ? "none" : "auto" }}
-                className="absolute inset-x-0 mx-auto top-3 h-[19rem] sm:h-[23rem] w-60 sm:w-72 overflow-hidden rounded-[1.75rem] border border-white/15 bg-card shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] cursor-grab active:cursor-grabbing"
+                className="absolute inset-x-0 mx-auto top-3 h-[20rem] sm:h-[26rem] md:h-[24rem] lg:h-[30rem] xl:h-[32rem] w-64 sm:w-[20rem] md:w-[19rem] lg:w-[24rem] xl:w-[26rem] overflow-hidden rounded-md border border-white/15 bg-card shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] cursor-grab active:cursor-grabbing"
               >
                 <img
                   src={item.image}
@@ -111,7 +111,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
                   draggable={false}
                   className="h-full w-full object-cover select-none"
                 />
-                <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-white/10" />
+                <span className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-white/10" />
                 <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-white/[0.06]" />
               </motion.button>
             );
@@ -134,7 +134,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
                 }`}
               >
                 <span className="eyebrow">{item.subtitle || "Who We Are"}</span>
-                <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary leading-[1.05]">
+                <h2 className="page-title text-primary">
                   {item.title}
                 </h2>
                 <p className="text-secondary text-base sm:text-lg leading-relaxed max-w-xl">{item.text}</p>

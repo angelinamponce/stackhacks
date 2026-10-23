@@ -4,6 +4,7 @@ import { client } from '../sanityClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Clock, MapPin, ExternalLink, Calendar as CalendarIcon, X } from 'lucide-react'
 import LoadError from '../components/LoadError'
+import { spotlightHandlers } from '../lib/pointer'
 
 const DAYS_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
@@ -45,7 +46,7 @@ function EventDetailModal({ event, onClose }) {
         {/* Left Column: Enlarged container displaying full image prominently on both mobile and desktop */}
         {event.image && (
           <div className="w-full md:w-1/2 shrink-0 flex items-center justify-center p-4 sm:p-6 bg-black/40 border-b md:border-b-0 md:border-r border-white/10">
-            <div className="w-full h-64 sm:h-80 md:h-full flex items-center justify-center rounded-xl bg-black/50 border border-white/10 p-2 overflow-hidden shadow-inner">
+            <div className="w-full h-64 sm:h-80 md:h-full flex items-center justify-center rounded-md bg-black/50 border border-white/10 p-2 overflow-hidden shadow-inner">
               <img
                 src={event.image}
                 alt={event.title}
@@ -260,7 +261,7 @@ const Events = () => {
   }, [activeTab, upcomingEvents, pastEvents, selectedDate, eventsByDate])
 
   return (
-    <div data-circuit-section className="screen-section w-full max-w-6xl mx-auto px-6">
+    <div data-circuit-section className="headings-bold screen-section w-full max-w-6xl mx-auto px-6">
       {/* Page Title with Woosh-in */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -268,8 +269,8 @@ const Events = () => {
         transition={{ duration: 0.5 }}
         className="mb-10 space-y-2"
       >
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-primary">
-          Events Calendar
+        <h1 className="page-title text-primary">
+          Events <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">Calendar</span>
         </h1>
         <p className="text-secondary text-sm sm:text-base leading-relaxed">
           Explore upcoming hackathons, workshops, tech talks, and past ceremonies.
@@ -486,7 +487,8 @@ const Events = () => {
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="tech-card p-5 sm:p-6 bg-[#141416] border border-white/10 hover:border-accent/50 transition-all duration-300 space-y-4 shadow-lg group"
+                    {...spotlightHandlers}
+                    className="tech-card spotlight spotlight-border p-5 sm:p-6 bg-[#141416] border border-white/10 hover:border-accent/50 hover:-translate-y-1 transition-all duration-300 space-y-4 shadow-lg group"
                   >
                     <div className="flex items-start gap-4">
                       {/* Left: Date Box Matching Reference */}

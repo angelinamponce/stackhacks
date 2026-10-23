@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight, ChevronDown } from 'lucide-react'
 import { fetchCompanies } from '../lib/companies'
+import HeroSky from './HeroSky'
+import { useMagnetic } from '../lib/pointer'
+import { HeroShLogo } from './ShLogo'
 import LoadError from './LoadError'
 import { useIntroDone } from '../lib/intro'
 
@@ -46,6 +49,35 @@ export default function Hero() {
   const enter = introDone ? { opacity: 1, y: 0 } : undefined
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  // The night sky keeps its stars and shooting stars clear of these
+  const textRef = useRef(null)
+  const logoRef = useRef(null)
+  const skyAvoid = useMemo(() => [textRef, logoRef], [])
+  const magnetic = useMagnetic(6)
+  const reduce = useReducedMotion()
+  const parallaxRef = useRef(null)
+
+  // Signature moment: the SH mark drifts very slowly against the text as the page scrolls (max 40px).
+  // Desktop only (on phones the mark sits right above the text); off for reduced motion.
+  useEffect(() => {
+    const el = parallaxRef.current
+    if (!el || reduce) return
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const on = window.innerWidth >= 1024
+      el.style.transform = on ? `translate3d(0, ${Math.min(window.scrollY * 0.12, 40).toFixed(1)}px, 0)` : ''
+    }
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [reduce])
 
   useEffect(() => {
     const loadCompanies = async () => {
@@ -65,12 +97,13 @@ export default function Hero() {
     // Landing screen: hero + logo strip fill exactly one viewport (below the nav); the hero is
     // centred in the remaining space and the strip is pinned to the bottom. Sizes scale with
     // viewport height (see .landing-* in index.css) so it fits short laptop screens too.
-    <section data-landing className="landing overflow-x-hidden flex flex-col">
+    // data-network-clear: the home page's background network stays out of the whole landing (the hero has its own sky)
+    <section data-landing data-network-clear className="landing overflow-x-hidden flex flex-col">
       {/* Hero Content Section */}
-      <div data-circuit-hero className="landing-hero relative flex flex-1 min-h-0 items-center border-b border-white/[0.08]">
+      <div data-circuit-hero className="landing-hero relative isolate flex flex-1 min-h-0 items-center border-b border-white/[0.08]">
+        <HeroSky avoidRefs={skyAvoid} />
         <div className="relative mx-auto flex w-full max-w-6xl flex-col px-6 lg:block">
-          {/* The background network fades out behind this column (data-network-clear) */}
-          <div data-network-clear className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
+          <div ref={textRef} className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
 
             {/* Clean Typographic Eyebrow */}
             <motion.p
@@ -86,10 +119,10 @@ export default function Hero() {
               initial={{ opacity: 0, y: 24 }}
               animate={enter}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="landing-title font-semibold tracking-tight text-primary leading-[1.08]"
+              className="landing-title page-title text-primary"
             >
               Welcome to <br />
-              <span className="text-accent font-semibold">StackHacks.</span>
+              <span className="text-accent">StackHacks.</span>
             </motion.h1>
 
             <motion.p
@@ -107,7 +140,7 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="landing-actions flex flex-wrap items-center justify-center lg:justify-start gap-3"
             >
-              <Link to="/about" className="btn-primary group">
+              <Link to="/about" {...magnetic} className="btn-primary group">
                 <span>About Our Club</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
@@ -116,6 +149,7 @@ export default function Hero() {
                 href="https://www.instagram.com/stackhacksbu/?hl=en"
                 target="_blank"
                 rel="noopener noreferrer"
+                {...magnetic}
                 className="btn-secondary group"
               >
                 <span>Latest Updates</span>
@@ -126,13 +160,11 @@ export default function Hero() {
 
           {/* Right Hero Visual: Ambient Glow + Logo */}
           <div className="landing-visual order-first lg:order-last lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 flex items-center justify-center pointer-events-none">
-            {/* The page's single glow: a soft gold radial behind the logo */}
-            <div className="absolute w-64 h-64 sm:w-80 sm:h-80 bg-accent/10 rounded-full blur-[90px] pointer-events-none" />
-            <img
-              className="landing-logo relative w-auto object-contain"
-              src={`${import.meta.env.BASE_URL}SHTrans.png`}
-              alt="StackHacks Emblem"
-            />
+            <div ref={parallaxRef} className="relative flex items-center justify-center will-change-transform">
+              {/* One very faint radial glow behind the mark (the mark adds its own tight glow) */}
+              <div className="absolute w-64 h-64 sm:w-80 sm:h-80 bg-accent/[0.06] rounded-full blur-[90px] pointer-events-none" />
+              <HeroShLogo logoRef={logoRef} className="landing-logo w-auto" />
+            </div>
           </div>
         </div>
 
@@ -152,8 +184,8 @@ export default function Hero() {
       </div>
 
       {/* Professional Experience Logos Marquee */}
-      {/* data-circuit-avoid keeps the page circuits out of the strip; data-network-clear keeps the background network out */}
-      <div data-circuit-section data-circuit-avoid data-network-clear className="landing-strip relative shrink-0">
+      {/* data-circuit-avoid keeps the page circuits out of the strip */}
+      <div data-circuit-section data-circuit-avoid className="landing-strip relative shrink-0">
         {/* Static gold hairline above the strip */}
         <span aria-hidden="true" className="strip-hairline pointer-events-none absolute inset-x-0 top-0" />
         <div className="relative max-w-6xl mx-auto px-6">

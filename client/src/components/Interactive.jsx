@@ -41,7 +41,7 @@ export function ScrollProgress() {
     <motion.div
       aria-hidden="true"
       style={{ scaleX }}
-      className="fixed top-16 left-0 right-0 z-[499] h-[2px] origin-left bg-gradient-to-r from-accent/0 via-accent to-[#ffd38a] shadow-[0_0_10px_rgba(254,178,58,0.6)]"
+      className="fixed top-16 left-0 right-0 z-[499] h-px origin-left bg-white/25"
     />
   )
 }
@@ -74,5 +74,31 @@ export function Reveal({ as = 'div', delay = 0, fallbackMs = 1200, className = '
     >
       {children}
     </Tag>
+  )
+}
+
+/** Shared stagger step for revealing sibling items (≈70ms between children). */
+export const STAGGER = 0.07
+
+/**
+ * Thin gold hairline that draws in from the centre as it scrolls into view (scaleX only),
+ * replacing hard dividers. Always drawn after `fallbackMs`, and immediately for reduced motion.
+ */
+export function Hairline({ className = '', fallbackMs = 1500 }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, amount: 0.5 })
+  const reduce = useReducedMotion()
+  const [forced, setForced] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setForced(true), fallbackMs)
+    return () => clearTimeout(id)
+  }, [fallbackMs])
+  const drawn = reduce || inView || forced
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className={`h-px w-full origin-center bg-gradient-to-r from-transparent via-accent/50 to-transparent transition-transform duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${drawn ? 'scale-x-100' : 'scale-x-0'} ${className}`}
+    />
   )
 }

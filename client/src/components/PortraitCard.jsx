@@ -44,13 +44,13 @@ export default function PortraitCard({
       onMouseEnter={onHover}
       {...(reduce ? {} : tilt)}
       {...buttonProps}
-      className={`founder-card group relative shrink-0 snap-center cursor-pointer text-left transition-transform duration-300 ease-out rounded-[1.4rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-4 focus-visible:ring-offset-background ${widthClass}`}
+      className={`founder-card group relative shrink-0 snap-center cursor-pointer text-left transition-transform duration-300 ease-out rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-4 focus-visible:ring-offset-background ${widthClass}`}
     >
       <motion.div
         initial={false}
         animate={{ y: lifted ? -10 : 0, scale: isHovered ? 1.05 : isActive ? 1.03 : 1, filter: `brightness(${brightness})` }}
         transition={reduce ? { duration: 0 } : SPRING}
-        className={`card-shine relative aspect-[4/5] overflow-hidden rounded-[1.4rem] border bg-card transition-[border-color,box-shadow] duration-500 ${
+        className={`card-shine relative aspect-[4/5] overflow-hidden rounded-md border bg-card transition-[border-color,box-shadow] duration-500 ${
           isActive
             ? 'border-accent/80 shadow-[0_28px_56px_-24px_rgba(0,0,0,0.95),0_0_44px_-10px_rgba(254,178,58,0.55)]'
             : 'border-white/10 shadow-[0_22px_44px_-26px_rgba(0,0,0,0.95)] group-hover:border-accent/50'

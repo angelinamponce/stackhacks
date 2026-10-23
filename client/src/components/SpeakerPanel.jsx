@@ -13,7 +13,7 @@ const EASE = [0.16, 1, 0.3, 1]
 // Tall rectangular headshot with a gold edge; initials stand in when there is no photo or it fails to load
 function Headshot({ headshot, name }) {
   const [broken, setBroken] = useState(false)
-  const frame = 'absolute inset-0 overflow-hidden rounded-3xl border border-accent/50 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.95),0_0_60px_-18px_rgba(254,178,58,0.45)]'
+  const frame = 'absolute inset-0 overflow-hidden rounded-md border border-accent/50 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.95),0_0_60px_-18px_rgba(254,178,58,0.45)]'
   return headshot?.src && !broken ? (
     <div className={frame}>
       <img src={headshot.src} alt={headshot.alt} onError={() => setBroken(true)} style={{ objectPosition: headshot.position }} className="h-full w-full object-cover" />

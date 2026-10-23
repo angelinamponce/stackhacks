@@ -50,7 +50,7 @@ export default function Lightbox({ src, alt, caption, onClose, onPrev, onNext, p
           src={src}
           alt={alt}
           onError={onError}
-          className={`block ${onPrev ? 'max-h-[72svh]' : 'max-h-[82svh]'} max-w-full w-auto rounded-2xl border border-accent/30 object-contain shadow-[0_40px_100px_-30px_rgba(0,0,0,0.95),0_0_60px_-24px_rgba(254,178,58,0.5)]`}
+          className={`block ${onPrev ? 'max-h-[72svh]' : 'max-h-[82svh]'} max-w-full w-auto rounded-md border border-accent/30 object-contain shadow-[0_40px_100px_-30px_rgba(0,0,0,0.95),0_0_60px_-24px_rgba(254,178,58,0.5)]`}
         />
         {caption && <figcaption className="mt-3 text-center text-sm text-secondary">{caption}</figcaption>}
         {onPrev && onNext && (

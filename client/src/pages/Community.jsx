@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
 import { client } from '../sanityClient'
-import { Reveal } from '../components/Interactive'
+import { Reveal, Hairline } from '../components/Interactive'
 import PhotoSlot from '../components/PhotoSlot'
 import PhotoGallery from '../components/PhotoGallery'
 import CommunityHero from '../components/CommunityHero'
@@ -19,10 +19,8 @@ function SectionHeading({ id, eyebrow, title, intro }) {
   )
 }
 
-// Thin gold hairline between groups of photos
-const Divider = () => (
-  <div aria-hidden="true" className="h-px w-full bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
-)
+// Thin gold hairline between groups of photos; draws in as it scrolls into view
+const Divider = () => <Hairline />
 
 function SubHeading({ children }) {
   return <h3 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">{children}</h3>
@@ -71,32 +69,36 @@ function SpeakerRow({ speakers: data }) {
     return n
   }), [speakers.length])
 
+  // One unified rectangle: the three photos touch, divided only by thin, faint gold lines
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-      {speakers.map((s, i) => (
-        <Reveal key={s.name} delay={i * 0.08}>
-          <PhotoSlot
-            photo={s}
-            aspect="aspect-[3/2]"
-            label={`Open profile: ${s.name}, ${s.role}`}
-            buttonRef={(el) => { cardRefs.current[i] = el }}
-            onOpen={() => { returnRef.current = cardRefs.current[i]; setOpen(i) }}
-            captionContent={
-              <>
+    <Reveal>
+      <ul className="grid grid-cols-1 overflow-hidden rounded-md border border-accent/30 sm:grid-cols-3">
+        {speakers.map((s, i) => (
+          <li key={s.name} className={i > 0 ? 'border-t border-accent/30 sm:border-l sm:border-t-0' : ''}>
+            <button
+              ref={(el) => { cardRefs.current[i] = el }}
+              type="button"
+              onClick={() => { returnRef.current = cardRefs.current[i]; setOpen(i) }}
+              aria-label={`Open profile: ${s.name}, ${s.role}`}
+              className="group relative block aspect-[3/2] w-full overflow-hidden bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70"
+            >
+              <img src={s.src} alt={s.alt} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.04]" />
+              <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+              <span className="absolute inset-x-0 bottom-0 p-4 text-left sm:p-5">
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">{s.role}</span>
-                <span className="mt-1 block text-lg font-semibold text-primary">{s.name}</span>
-              </>
-            }
-          />
-        </Reveal>
-      ))}
+                <span className="mt-1 block text-lg font-semibold text-white">{s.name}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
 
       <AnimatePresence>
         {open !== null && (
           <SpeakerPanel speakers={speakers} index={open} onClose={close} onNavigate={navigate} returnRef={returnRef} />
         )}
       </AnimatePresence>
-    </div>
+    </Reveal>
   )
 }
 

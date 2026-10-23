@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronDown, Send, Mail, MapPin, Loader2 } from "lucide-react"
 import Modal from '../components/Modal'
 import FAQ from '../components/FAQ'
+import { Hairline } from '../components/Interactive'
 
 const Contact = () => {
   const [result, setResult] = useState("")
@@ -53,9 +54,9 @@ const Contact = () => {
               Get In Touch
             </p>
 
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-primary leading-[1.15]">
+            <h1 className="page-title text-primary">
               Any questions <br />
-              <span className="text-accent">for our team?</span>
+              <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">for our team?</span>
             </h1>
 
             <p className="text-secondary text-base leading-relaxed">
@@ -175,7 +176,9 @@ const Contact = () => {
       </div>
 
       {/* FAQ SECTION */}
-      <div ref={faqRef} data-circuit-section className="scroll-mt-16 border-t border-white/[0.08] bg-white/[0.01]">
+      <div ref={faqRef} data-circuit-section className="relative scroll-mt-16 bg-white/[0.01]">
+        {/* Gold hairline in place of the hard divider, drawing in as the FAQ enters */}
+        <Hairline className="absolute inset-x-0 top-0" />
         <FAQ />
       </div>
 

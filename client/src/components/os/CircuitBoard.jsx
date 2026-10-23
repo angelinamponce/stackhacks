@@ -5,7 +5,7 @@ import { GlowNode, RingNode, SoftPulse, TRACE_GOLD } from './CircuitParts'
 import { buildBoard, measurePage } from '../../lib/circuitLayout'
 
 const modeFor = (w) => (w < 768 ? 'minimal' : w < 1024 ? 'medium' : 'full')
-const LINE = 1 // one thin stroke weight everywhere
+const LINE = 1.4 // one stroke weight everywhere: slightly thicker for definition, still faint
 // Base opacities: a sparse, faint accent. The spine is never brighter than the branches.
 const BRANCH_OPACITY = 0.16
 const HERO_BRANCH_OPACITY = 0.1

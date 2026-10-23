@@ -14,7 +14,7 @@ export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = 
   const [broken, setBroken] = useState(false)
   const [brokenMore, setBrokenMore] = useState(() => new Set())
   const hasPhoto = Boolean(photo.src) && !broken
-  const frame = `relative ${aspect} w-full overflow-hidden rounded-2xl border`
+  const frame = `relative ${aspect} w-full overflow-hidden rounded-md border`
   // Featured (lead) photos get a stronger gold edge and a soft glow
   const edge = featured
     ? 'border-accent/70 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.9),0_0_48px_-12px_rgba(254,178,58,0.45)]'
