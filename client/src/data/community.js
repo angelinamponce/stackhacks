@@ -88,7 +88,7 @@ export const ceremony = {
     {
       role: 'Founding President', name: 'David Ponce', title: 'Founding President',
       src: eoyFoundersAddress, alt: 'David Ponce speaking at a Binghamton University podium beside a Founders Address slide, with guests seated in the foreground', placeholder: 'Photo coming soon',
-      headshot: { src: davidHeadshot, alt: 'Headshot of David Ponce in a white shirt against a coral backdrop', position: '50% 25%' },
+      headshot: { src: davidHeadshot, alt: 'Headshot of David Ponce in a white shirt against a coral backdrop', position: '50% 10%' },
       achievements: [
         { text: 'Technology consulting at Brightshore Capital', current: true, company: 'Brightshore Capital', logoSrc: brightshoreLogo, logoTone: 'light' },
         { text: "Pursuing a Master's in Computer Science at NYU Tandon School of Engineering", current: true, company: 'NYU Tandon School of Engineering', chipLabel: 'NYU Tandon' },
