@@ -20,15 +20,14 @@
 //   highlights         short tags
 //   needsReview/hidden for records not yet confirmed (hidden: true keeps them off the grid)
 //   displayTitle       overrides the Sanity title everywhere on the E-Board page
-//   pinFirst           shows this member first (and selected) on the E-Board
+//   (display order and titles live in the BOARD list in pages/Eboard.jsx)
 //
 // Text and numbers are verbatim from the provided data / Sanity bios. Nothing is invented.
 
 export const eboardDetails = {
   // Angelina Ponce
   '0ee97634-9122-47f5-a50f-6f64c3eb9242': {
-    displayTitle: 'Founder & Senior Advisor',
-    pinFirst: true,
+    displayTitle: 'Co-Founder & Senior Advisor',
     involvement: [
       { title: 'Senior Advisor', start: '2026-08', end: null, description: 'Advise the President & direct organization-wide strategy development and execution.', skills: [] },
       { title: 'President', start: '2025-04', end: '2026-08', description: 'Co-founded and lead StackHacks, a student tech org with four selective project tracks (AI/ML, Cybersecurity, Web Development, Application Recreation); also direct the Spring 2026 Internship Program', skills: [] },
@@ -529,5 +528,40 @@ export const eboardDetails = {
       },
     ],
     education: 'CS @ Binghamton',
+  },
+
+  // Nusrat Sara (not in Sanity yet; added as a local member in pages/Eboard.jsx)
+  'local-nusrat-sara': {
+    involvement: [
+      { title: 'Vice President of Marketing', start: '2026-09', end: null, skills: [] },
+    ],
+    externalExperience: [
+      {
+        company: "Breaking Games",
+        role: "SQL & Database Architect",
+        type: "",
+        start: "2026-08",
+        end: null,
+        location: "",
+        workMode: "",
+        description: null,
+        skills: [],
+        logo: null,
+        truncated: false,
+      },
+      {
+        company: "Princess Polly",
+        role: "Brand Ambassador",
+        type: "",
+        start: "2025-12",
+        end: null,
+        location: "",
+        workMode: "",
+        description: null,
+        skills: [],
+        logo: null,
+        truncated: false,
+      },
+    ],
   },
 }

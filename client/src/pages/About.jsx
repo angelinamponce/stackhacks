@@ -7,15 +7,20 @@ import { CountUp, Reveal, Hairline, STAGGER } from '../components/Interactive'
 import { spotlightHandlers } from '../lib/pointer'
 import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users } from 'lucide-react'
 import CornerTraces from '../components/os/CornerTraces'
+// A closer crop of her headshot, so her face fills the card like the others
+import angelinaHeadshot from '../assets/events/angelina-ponce-headshot-close.jpg'
 import LoadError from '../components/LoadError'
 
 // Founders hidden from the carousel (matched case-insensitively on name).
 const EXCLUDED_FOUNDERS = ['shahida chowdhury']
 // Founders are ordered by creation date in Sanity (there's no order field), so the display order
-// is set here: these names lead, everyone else follows in their Sanity order.
-const FOUNDER_ORDER = ['david ponce', 'jack hunter', 'angelina ponce']
+// is set here (three on the top row, four on the bottom, see breakAfter below); anyone not listed
+// follows in Sanity order.
+const FOUNDER_ORDER = ['david ponce', 'jack hunter', 'angelina ponce', 'hilary rojas rosales', 'aditya kapoor', 'ryan gallego', 'erika nelson']
 // Title overrides until the Sanity founder "Position" field is updated (then these can be removed)
 const FOUNDER_TITLES = { 'jack hunter': 'Chief Technology Officer & Co-Founder' }
+// Local headshot replacements, until the photo is replaced in the Studio
+const FOUNDER_IMAGES = { 'angelina ponce': angelinaHeadshot }
 const founderKey = (f) => f.name?.trim().toLowerCase()
 const rank = (f) => { const i = FOUNDER_ORDER.indexOf(founderKey(f)); return i === -1 ? FOUNDER_ORDER.length : i }
 
@@ -159,7 +164,7 @@ const About = () => {
         setFounders(
           (foundersData || [])
             .filter((f) => !EXCLUDED_FOUNDERS.includes(founderKey(f)))
-            .map((f, i) => ({ ...f, position: FOUNDER_TITLES[founderKey(f)] || f.position, _i: i }))
+            .map((f, i) => ({ ...f, position: FOUNDER_TITLES[founderKey(f)] || f.position, image: FOUNDER_IMAGES[founderKey(f)] || f.image, _i: i }))
             .sort((a, b) => rank(a) - rank(b) || a._i - b._i)
         )
         setAbout(aboutData?.length ? aboutData : fallbackAbout)
@@ -222,7 +227,7 @@ const About = () => {
             <div className="h-[30rem] animate-pulse rounded-3xl bg-white/[0.02]" />
           ) : founders.length > 0 ? (
             <Reveal>
-              <FoundersCarousel founders={founders} />
+              <FoundersCarousel founders={founders} breakAfter={3} />
             </Reveal>
           ) : loadError ? (
             <LoadError what="the founders" />

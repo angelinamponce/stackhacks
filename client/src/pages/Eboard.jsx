@@ -17,6 +17,9 @@ import { expandTitle } from '../lib/titles'
 import { initials } from '../lib/initials'
 import { dateRange, duration, involvedSince, isCurrent } from '../lib/involvement'
 import { projectSlug } from '../lib/projects'
+// A closer crop of her headshot, so her face fills the card like the others
+import angelinaHeadshot from '../assets/events/angelina-ponce-headshot-close.jpg'
+import nusratHeadshot from '../assets/events/nusrat-sara-headshot.jpg'
 
 // Resolves a member's social links, falling back to the club accounts when none are set.
 function getSocialLinks(member) {
@@ -62,13 +65,38 @@ function SocialLinks({ member, size = "sm", className = "" }) {
   )
 }
 
-// Pinned members (pinFirst in the data file) lead; everyone else keeps the data-file order.
-const orderMembers = (list) => [
-  ...list.filter((m) => eboardDetails[m._id]?.pinFirst),
-  ...list.filter((m) => !eboardDetails[m._id]?.pinFirst),
+// Board order and titles, in display order (matched by name). These titles win over the Sanity
+// titles; anyone not listed follows at the end in their Sanity order with their Sanity title.
+const BOARD = [
+  ['Eric Kim', 'President'],
+  ['Ryan Martin', 'Executive Vice President'],
+  ['Mahin Mahmud', 'Project Manager'],
+  ['Katie Schauber', 'Secretary'],
+  ['Jaylin Man', 'Vice President of Internal Affairs'],
+  ['Naomi Sellam', 'Vice President of Finance'],
+  ['Nusrat Sara', 'Vice President of Marketing'],
+  ['Maddie Broderick', 'Director of External Affairs'],
+  ['Ryan Tsui', 'Director of Professional Development'],
+  ['Stephania Calin', 'Director of Technical Events'],
+  ['Maxwell Chan', 'Senior Advisor'],
+  ['Angelina Ponce', 'Co-Founder & Senior Advisor'],
 ]
-// Displayed title: the data file's displayTitle override, else the Sanity title (abbreviations spelled out)
-const titleFor = (m) => expandTitle(eboardDetails[m._id]?.displayTitle || m.title || '')
+const nameKey = (m) => m.name?.trim().toLowerCase()
+const boardIndex = new Map(BOARD.map(([name], i) => [name.toLowerCase(), i]))
+const boardTitle = new Map(BOARD.map(([name, title]) => [name.toLowerCase(), title]))
+// Members not in Sanity yet (add them in the Studio to make them permanent, then remove them here)
+const LOCAL_MEMBERS = [
+  { _id: 'local-nusrat-sara', name: 'Nusrat Sara', title: 'Vice President of Marketing', image: nusratHeadshot },
+]
+// Local headshot replacements, until the photo is replaced in the Studio
+const IMAGE_OVERRIDES = { 'angelina ponce': angelinaHeadshot }
+
+const orderMembers = (list) => list
+  .map((m, i) => ({ m, i }))
+  .sort((a, b) => (boardIndex.get(nameKey(a.m)) ?? BOARD.length) - (boardIndex.get(nameKey(b.m)) ?? BOARD.length) || a.i - b.i)
+  .map(({ m }) => m)
+// Displayed title: the board list, else the data file's displayTitle, else the Sanity title (abbreviations spelled out)
+const titleFor = (m) => expandTitle(boardTitle.get(nameKey(m)) || eboardDetails[m._id]?.displayTitle || m.title || '')
 
 const EMPTY = { education: null, externalExperience: [], involvement: [], highlights: [] }
 // Structured details for a member, falling back to their raw bio if they have no entry yet.
@@ -420,7 +448,8 @@ const Eboard = () => {
           linkedin, instagram, github, email, website,
           "image": image.asset->url,
         }`)
-        setMembers(data || [])
+        const merged = [...(data || []), ...LOCAL_MEMBERS.filter((l) => !(data || []).some((m) => nameKey(m) === nameKey(l)))]
+        setMembers(merged.map((m) => (IMAGE_OVERRIDES[nameKey(m)] ? { ...m, image: IMAGE_OVERRIDES[nameKey(m)] } : m)))
       } catch (e) {
         console.error("Failed to fetch eboard from Sanity: ", e)
         setLoadError(true)

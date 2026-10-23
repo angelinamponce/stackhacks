@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import PortraitCard from './PortraitCard'
@@ -7,10 +7,10 @@ import { expandTitle } from '../lib/titles'
 const EASE = [0.16, 1, 0.3, 1]
 
 /**
- * All founders visible at once: large portrait cards (4 + 3 centred on desktop, a scroll-snap row
- * with the active card centred below lg). Selecting one spotlights them in the panel underneath.
+ * All founders visible at once: large portrait cards (wrapping four to a row and centred on desktop,
+ * or split where `breakAfter` says; a scroll-snap row with the active card centred below lg). Selecting one spotlights them in the panel underneath.
  */
-export default function FoundersCarousel({ founders }) {
+export default function FoundersCarousel({ founders, breakAfter }) {
   const [active, setActive] = useState(0)
   const [hovered, setHovered] = useState(null)
   const reduce = useReducedMotion()
@@ -53,11 +53,11 @@ export default function FoundersCarousel({ founders }) {
         <div
           ref={rowRef}
           className="-mx-6 px-[calc((100vw-min(64vw,260px))/2)] sm:px-[calc((100vw-240px)/2)] flex gap-5 overflow-x-auto snap-x snap-mandatory py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [perspective:1200px]
-                     lg:mx-0 lg:px-0 lg:flex-wrap lg:justify-center lg:gap-6 lg:overflow-visible lg:snap-none lg:py-4"
+                     lg:mx-0 lg:px-0 lg:flex-wrap lg:justify-center lg:gap-x-6 lg:gap-y-0 lg:overflow-visible lg:snap-none lg:py-4"
         >
           {founders.map((founder, i) => (
+            <Fragment key={founder._id || founder.name}>
             <PortraitCard
-              key={founder._id || founder.name}
               name={founder.name}
               title={expandTitle(founder.position)}
               image={founder.image}
@@ -68,9 +68,13 @@ export default function FoundersCarousel({ founders }) {
               onClick={() => setActive(i)}
               onHover={() => setHovered(i)}
               cardRef={(el) => { cardRefs.current[i] = el }}
-              widthClass="w-[64vw] max-w-[260px] sm:w-[240px] lg:w-[calc((100%-4.5rem)/4)] lg:max-w-none"
+              widthClass="w-[64vw] max-w-[260px] sm:w-[240px] lg:w-[calc((100%-4.5rem)/4)] lg:max-w-none lg:mb-6"
               buttonProps={{ id: `founder-${i}`, role: 'option', 'aria-selected': i === active, tabIndex: -1 }}
             />
+            {/* Desktop only: start a new row after `breakAfter` cards (rows are spaced by the cards' own
+                bottom margin, so the zero-height break adds no gap). The phone/tablet scroll row is unaffected. */}
+            {breakAfter && i === breakAfter - 1 && <span aria-hidden="true" className="hidden lg:block lg:basis-full lg:h-0" />}
+            </Fragment>
           ))}
         </div>
       </div>
