@@ -5,7 +5,6 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // GitHub Pages serves the site from /stackhacks/; the deploy workflow sets BASE_PATH.
-  // Local dev and other hosts keep the root path.
-  base: process.env.BASE_PATH || '/',
+  // The site is served from the root of the custom domain (stackhacksbu.com)
+  base: '/',
 })

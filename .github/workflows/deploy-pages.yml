@@ -1,4 +1,4 @@
-# Builds the Vite client and deploys it to GitHub Pages at https://angelinamponce.github.io/stackhacks/
+# Builds the Vite client and deploys it to GitHub Pages at the custom domain https://stackhacksbu.com/
 # (Pages source must be set to "GitHub Actions" in the repo settings.)
 name: Deploy client to GitHub Pages
 
@@ -36,10 +36,8 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          BASE_PATH: /stackhacks/
 
-      # Pages has no SPA fallback: serving the app as 404.html lets deep links like /stackhacks/about load
+      # Pages has no SPA fallback: serving the app as 404.html lets deep links like /about load
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
 

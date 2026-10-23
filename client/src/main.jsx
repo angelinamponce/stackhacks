@@ -17,7 +17,7 @@ try {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {/* Match the deploy base path (e.g. /stackhacks on GitHub Pages; empty locally) */}
+    {/* Matches Vite's base path: '/' at the root domain, so the basename is empty (no prefix) */}
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <App />
     </BrowserRouter>
