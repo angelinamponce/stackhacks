@@ -5,15 +5,17 @@ import { client } from '../sanityClient'
 import { Reveal, Hairline } from '../components/Interactive'
 import PhotoSlot from '../components/PhotoSlot'
 import PhotoGallery from '../components/PhotoGallery'
-import CommunityHero from '../components/CommunityHero'
 import SpeakerPanel from '../components/SpeakerPanel'
-import { ceremony, generalBody, hackMadness } from '../data/community'
+import { communityIntro, ceremony, generalBody, hackMadness } from '../data/community'
 
-function SectionHeading({ id, eyebrow, title, intro }) {
+// Short gold accent bar under every heading on this page, so sections share one look
+const AccentBar = () => <span aria-hidden="true" className="block h-[3px] w-12 rounded-full bg-accent" />
+
+function SectionHeading({ id, title, intro }) {
   return (
-    <Reveal className="max-w-3xl space-y-3">
-      <span className="eyebrow">{eyebrow}</span>
-      <h2 id={id} className="text-3xl sm:text-5xl font-semibold tracking-tight text-primary">{title}</h2>
+    <Reveal className="max-w-3xl space-y-4">
+      <h2 id={id} className="text-[2.25rem] sm:text-5xl font-semibold tracking-tight text-primary">{title}</h2>
+      <AccentBar />
       {intro && <p className="pt-1 text-secondary text-base sm:text-lg leading-relaxed">{intro}</p>}
     </Reveal>
   )
@@ -22,8 +24,19 @@ function SectionHeading({ id, eyebrow, title, intro }) {
 // Thin gold hairline between groups of photos; draws in as it scrolls into view
 const Divider = () => <Hairline />
 
-function SubHeading({ children }) {
-  return <h3 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">{children}</h3>
+/** Sub-section title (Speakers, Project Teams, Gallery): serif display, white, with the gold accent bar. */
+function SubsectionTitle({ children }) {
+  return (
+    <Reveal className="space-y-3">
+      <h3 className="font-display-heading text-[2rem] leading-tight text-primary sm:text-[2.375rem] lg:text-[2.75rem]">{children}</h3>
+      <AccentBar />
+    </Reveal>
+  )
+}
+
+// Small label inside the Hack Madness card (Qualifications, Tournament blueprint)
+function CardLabel({ children }) {
+  return <h3 className="text-base font-semibold text-secondary">{children}</h3>
 }
 
 /** Staggered grid of photo slots; each slot reveals a beat after the previous one. */
@@ -85,7 +98,7 @@ function SpeakerRow({ speakers: data }) {
               <img src={s.src} alt={s.alt} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.04]" />
               <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
               <span className="absolute inset-x-0 bottom-0 p-4 text-left sm:p-5">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">{s.role}</span>
+                <span className="block text-sm font-semibold text-accent">{s.role}</span>
                 <span className="mt-1 block text-lg font-semibold text-white">{s.name}</span>
               </span>
             </button>
@@ -102,51 +115,46 @@ function SpeakerRow({ speakers: data }) {
   )
 }
 
-const SECTIONS = [
-  { id: 'ceremony', label: 'End of Year Ceremony' },
-  { id: 'general-body', label: 'General Body Events & Workshops' },
-  { id: 'hack-madness', label: 'Hack Madness' },
-]
-
-// Hero fact, counted from the data file (nothing hardcoded)
-const FACTS = [{ value: ceremony.teams.length, label: 'project teams' }]
-
 const Community = () => {
   return (
     <div className="relative">
-      <CommunityHero sections={SECTIONS} facts={FACTS} />
-
       <div className="max-w-6xl mx-auto px-6">
-        {/* ── A. End of Year Ceremony ── */}
-        <section id="ceremony" aria-labelledby="ceremony-title" className="screen-section space-y-10">
-          <SectionHeading eyebrow="Celebration" id="ceremony-title" title="End of Year Ceremony" intro={ceremony.intro} />
+        <Reveal className="pt-10 sm:pt-14">
+          <h1 className="page-title text-accent">Community</h1>
+          {/* Same type as the section descriptions (see SectionHeading) */}
+          <p className="mt-5 max-w-2xl text-secondary text-base sm:text-lg leading-relaxed">{communityIntro}</p>
+        </Reveal>
+
+        {/* ── A. End of Year Ceremony ── (starts right under the title: no screen-height centering or full top padding) */}
+        <section id="ceremony" aria-labelledby="ceremony-title" className="screen-section justify-start! pt-10! sm:pt-12! space-y-10">
+          <SectionHeading id="ceremony-title" title="End of Year Ceremony" intro={ceremony.intro} />
 
           <Reveal>
             <PhotoSlot photo={ceremony.groupPhoto} aspect="aspect-[16/9] lg:aspect-[21/9]" />
           </Reveal>
 
           <Divider />
-          <div className="space-y-5">
-            <SubHeading>Speakers</SubHeading>
+          <div className="space-y-8 pt-6 sm:pt-10">
+            <SubsectionTitle>Speakers</SubsectionTitle>
             <SpeakerRow speakers={ceremony.speakers} />
           </div>
 
           <Divider />
-          <div className="space-y-5">
-            <SubHeading>Project Teams</SubHeading>
+          <div className="space-y-8 pt-6 sm:pt-10">
+            <SubsectionTitle>Project Teams</SubsectionTitle>
             <PhotoGrid photos={ceremony.teams} aspect="aspect-[3/2]" className="md:grid-cols-2" />
           </div>
         </section>
 
         {/* ── B. General Body Events & Workshops ── */}
         <section id="general-body" aria-labelledby="general-body-title" className="screen-section space-y-10">
-          <SectionHeading eyebrow="Community" id="general-body-title" title="General Body Events & Workshops" intro={generalBody.intro} />
+          <SectionHeading id="general-body-title" title="General Body Events & Workshops" intro={generalBody.intro} />
           <PhotoGrid photos={generalBody.photos} aspect="aspect-[3/2]" className="sm:grid-cols-3" />
         </section>
 
         {/* ── C. Hack Madness ── */}
         <section id="hack-madness" aria-labelledby="hack-madness-title" className="screen-section space-y-10">
-          <SectionHeading eyebrow="Tournament" id="hack-madness-title" title={hackMadness.title} />
+          <SectionHeading id="hack-madness-title" title={hackMadness.title} />
 
           <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
             <Reveal>
@@ -155,17 +163,17 @@ const Community = () => {
 
             <Reveal delay={0.1} className="glass-card p-6 sm:p-8 space-y-7">
               <div className="space-y-3">
-                <span className="inline-flex rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-secondary">
+                <span className="inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-secondary">
                   Past event
                 </span>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">{hackMadness.presenter}</p>
+                <p className="text-sm font-semibold text-accent">{hackMadness.presenter}</p>
                 <p className="text-2xl sm:text-3xl font-semibold tracking-tight text-primary">
                   {hackMadness.title}, {hackMadness.tagline}
                 </p>
               </div>
 
               <div className="space-y-3">
-                <SubHeading>Qualifications</SubHeading>
+                <CardLabel>Qualifications</CardLabel>
                 <ul className="space-y-2">
                   {hackMadness.qualifications.map((q) => (
                     <li key={q} className="flex items-center gap-3 text-sm sm:text-base text-primary/90">
@@ -179,11 +187,11 @@ const Community = () => {
               </div>
 
               <div className="space-y-3">
-                <SubHeading>Tournament Blueprint</SubHeading>
+                <CardLabel>Tournament blueprint</CardLabel>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {hackMadness.blueprint.map((b) => (
                     <div key={b.title} className="space-y-1.5 rounded-2xl border border-accent/25 bg-white/[0.02] p-4">
-                      <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-accent">{b.title}</h4>
+                      <h4 className="text-sm font-semibold text-accent">{b.title}</h4>
                       <p className="text-sm font-medium text-primary">{b.lead}</p>
                       <p className="text-sm leading-relaxed text-secondary">{b.text}</p>
                     </div>
@@ -194,7 +202,7 @@ const Community = () => {
               <dl className="grid grid-cols-1 gap-x-6 gap-y-4 border-t border-white/[0.08] pt-6 sm:grid-cols-2">
                 {hackMadness.details.map((d) => (
                   <div key={d.label} className="space-y-1">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-secondary">{d.label}</dt>
+                    <dt className="text-sm text-secondary">{d.label}</dt>
                     <dd className="text-base font-medium text-primary">{d.value}</dd>
                   </div>
                 ))}
@@ -203,7 +211,10 @@ const Community = () => {
           </div>
 
           <Divider />
-          <PhotoGallery photos={hackMadness.photos} aspect="aspect-[3/2]" />
+          <div className="space-y-8 pt-6 sm:pt-10">
+            <SubsectionTitle>Gallery</SubsectionTitle>
+            <PhotoGallery photos={hackMadness.photos} aspect="aspect-[3/2]" />
+          </div>
         </section>
       </div>
     </div>

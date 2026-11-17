@@ -27,7 +27,7 @@ function Headshot({ headshot, name }) {
 }
 
 const currentBadge = (
-  <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Current</span>
+  <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent">Current</span>
 )
 
 /**
@@ -105,13 +105,13 @@ export default function SpeakerPanel({ speakers, index, onClose, onNavigate, ret
             {/* Details */}
             <div className="min-w-0 flex-1 space-y-7" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-3 text-center lg:text-left">
-                <motion.p {...item(0)} className="text-xs font-semibold uppercase tracking-[0.28em] text-accent">{s.role}</motion.p>
+                <motion.p {...item(0)} className="text-sm font-semibold text-accent">{s.role}</motion.p>
                 <motion.h2 {...item(1)} id={titleId} className="text-[clamp(2.25rem,6vw,4.25rem)] font-semibold leading-[1.02] tracking-tight text-primary">{s.name}</motion.h2>
                 {s.title && s.title !== s.role && <motion.p {...item(2)} className="text-base text-secondary">{s.title}</motion.p>}
               </div>
 
               <section className="space-y-4 border-t border-white/[0.08] pt-6">
-                <motion.h3 {...item(3)} className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">Achievements</motion.h3>
+                <motion.h3 {...item(3)} className="text-sm font-semibold text-secondary">Achievements</motion.h3>
                 <ul className="space-y-3">
                   {s.achievements.map((a, i) => (
                     <motion.li

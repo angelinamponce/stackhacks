@@ -116,6 +116,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary/60">
           <p>&copy; {new Date().getFullYear()} StackHacks. All rights reserved.</p>
+          <p>Built by StackHacks members at Binghamton.</p>
         </div>
       </div>
     </footer>

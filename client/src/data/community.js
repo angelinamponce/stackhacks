@@ -46,6 +46,10 @@ import binghamtonLogo from '../assets/logos/binghamton.png'
 // To add a photo: drop the file there, import it here, and set `src`.
 // Nothing below is invented; copy comes from the provided text and the Hack Madness flyer.
 
+// Short description under the "Community" page title
+export const communityIntro =
+  'We foster a supportive, innovative environment for our project division, internship cohort, and general body. Through volunteering, workshops, and social events, we help students build lasting connections while growing their expertise in tech.'
+
 export const ceremony = {
   intro:
     'Our End of Year Ceremony brings our entire community together to celebrate our collective milestones, individual achievements, and growth over the past year.',

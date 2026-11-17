@@ -48,7 +48,6 @@ const FAQ = () => {
   return (
     <FAQ_Tabs
       title="Frequently Asked Questions"
-      subtitle="Learn more about stackhacks"
       categories={categories}
       faqData={faqData}
     />

@@ -161,7 +161,7 @@ function InvolvementTimeline({ entries, onClose }) {
 }
 
 const currentBadge = (
-  <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
+  <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent">
     Current
   </span>
 )
@@ -190,7 +190,7 @@ function PreviousExperience({ entries, logos }) {
 
   return (
     <section className="space-y-3 border-t border-white/[0.08] pt-6">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">Previous Experience</h3>
+      <h3 className="text-sm font-semibold text-secondary">Previous experience</h3>
       <ul className="space-y-2">
         {groups.map((g, i) => {
           const first = g.roles[0]
@@ -292,7 +292,7 @@ function MemberDetail({ members, index, logos, origin, returnRef, onClose, onNav
                 </div>
                 <div className="min-w-0 space-y-1.5">
                   <h2 id={titleId} className="text-xl sm:text-3xl font-semibold text-primary">{member.name}</h2>
-                  <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-accent leading-relaxed">{titleFor(member)}</p>
+                  <p className="text-sm font-semibold text-accent leading-relaxed">{titleFor(member)}</p>
                   {d.highlights.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {d.highlights.map((h) => <span key={h} className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-medium text-secondary">{h}</span>)}
@@ -307,7 +307,7 @@ function MemberDetail({ members, index, logos, origin, returnRef, onClose, onNav
               {/* Involvement at StackHacks: the main section */}
               <section className="space-y-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-accent">Involvement at StackHacks</h3>
+                  <h3 className="text-sm font-semibold text-accent">Involvement at StackHacks</h3>
                   {since && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent/[0.06] py-1 pl-1.5 pr-3 text-xs font-medium text-primary shadow-[0_0_16px_-6px_rgba(254,178,58,0.6)]">
                       <img src={SHTrans} alt="" className="h-5 w-5 object-contain" />
@@ -469,9 +469,8 @@ const Eboard = () => {
       style={{ paddingTop: 'clamp(56px, 10svh, 120px)' }}
     >
       <Reveal className="text-center max-w-2xl mx-auto mb-10 space-y-3">
-        <span className="eyebrow">Leadership Team</span>
         <h1 className="page-title text-primary">
-          Meet the <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">Executive Board</span>
+          Meet the <span className="text-accent">Executive Board</span>
         </h1>
         <p className="text-secondary text-base leading-relaxed">
           Meet the student engineers and organizers driving technical tracks, hackathon initiatives, and community mentorship at Binghamton University.

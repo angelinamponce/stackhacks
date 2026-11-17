@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react'
 
 export const FAQ_Tabs = ({ 
   title = "Frequently Asked Questions",
-  subtitle = "Learn More About StackHacks",
   categories,
   faqData,
   className = "",
@@ -20,7 +19,7 @@ export const FAQ_Tabs = ({
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         
-        {/* Left Column: Eyebrow, Title & Category Selector */}
+        {/* Left Column: Title & Category Selector */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -28,10 +27,7 @@ export const FAQ_Tabs = ({
           className="lg:col-span-4 space-y-6"
         >
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-              {subtitle}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary mt-2">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary">
               {title}
             </h2>
           </div>

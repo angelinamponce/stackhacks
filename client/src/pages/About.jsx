@@ -5,8 +5,7 @@ import { CircularDisplay } from '../components/CircularDisplay'
 import FoundersCarousel from '../components/FoundersCarousel'
 import { CountUp, Reveal, Hairline, STAGGER } from '../components/Interactive'
 import { spotlightHandlers } from '../lib/pointer'
-import { Bell, FileText, Calendar, Globe, Layers, CalendarDays, Users } from 'lucide-react'
-import CornerTraces from '../components/os/CornerTraces'
+import { Bell, FileText, Calendar, Globe } from 'lucide-react'
 // A closer crop of her headshot, so her face fills the card like the others
 import angelinaHeadshot from '../assets/events/angelina-ponce-headshot-close.jpg'
 import davidHeadshot from '../assets/events/david-ponce-headshot.jpg'
@@ -69,11 +68,13 @@ const fallbackAbout = [
   }
 ]
 
-function SectionHeading({ eyebrow, title, children }) {
+// Events hosted to date, including ones never posted to Sanity; the live count can only raise it
+const EVENTS_HOSTED_MIN = 15
+
+function SectionHeading({ title, children }) {
   return (
     <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-      <div className="space-y-3">
-        <span className="eyebrow">{eyebrow}</span>
+      <div>
         <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-primary">{title}</h2>
       </div>
       {children}
@@ -181,11 +182,13 @@ const About = () => {
     fetchData()
   }, [])
 
+  // Live Sanity counts; any count that's zero is left out. Sanity only holds the events posted on
+  // the site, so the events figure never shows fewer than EVENTS_HOSTED_MIN and always reads "N+".
   const statItems = stats
     ? [
-        { label: 'Active Projects', value: stats.projects, icon: Layers },
-        { label: 'Events Hosted', value: stats.events, icon: CalendarDays },
-        { label: 'Student Leaders', value: stats.leaders, icon: Users },
+        { label: 'Active projects', value: stats.projects },
+        { label: 'Events hosted', value: Math.max(stats.events, EVENTS_HOSTED_MIN), plus: true },
+        { label: 'Student leaders', value: stats.leaders },
       ].filter((s) => s.value > 0)
     : []
 
@@ -205,24 +208,28 @@ const About = () => {
           {loadError && <LoadError what="the latest club stats and photos" />}
 
           {statItems.length > 0 && (
-            <ul className="flex flex-wrap justify-center gap-3 sm:gap-5">
+            <dl className="grid grid-cols-1 border-t border-white/10 py-8 sm:grid-cols-3 sm:py-16">
               {statItems.map((stat, i) => (
                 <Reveal
-                  as="li"
                   key={stat.label}
-                  delay={i * 0.08}
-                  className="w-[calc((100%-1.5rem)/3)] sm:w-[calc((100%-2.5rem)/3)]"
+                  delay={i * STAGGER}
+                  className={`flex flex-col-reverse gap-3 py-8 sm:py-2 sm:px-8 lg:px-12 sm:first:pl-0 ${i > 0 ? 'border-t border-white/10 sm:border-t-0 sm:border-l' : ''}`}
                 >
-                  <StatCard stat={stat} index={i} />
+                  {/* Label first in the markup (dt before dd); flex-col-reverse shows the number on top */}
+                  <dt className="text-[0.95rem] leading-snug text-secondary sm:text-base">{stat.label}</dt>
+                  <dd className="font-display-heading text-[3.25rem] leading-none text-primary sm:text-[3.75rem] lg:text-[4.5rem]">
+                    <CountUp to={stat.value} />
+                    {stat.plus && <span className="text-accent">+</span>}
+                  </dd>
                 </Reveal>
               ))}
-            </ul>
+            </dl>
           )}
         </section>
 
         {/* ── Meet the Founders ── */}
         <section id="founders" className="screen-section space-y-10">
-          <SectionHeading eyebrow="Origins" title="Meet the Founders" />
+          <SectionHeading title="Meet the Founders" />
 
           {loading ? (
             <div className="h-[30rem] animate-pulse rounded-3xl bg-white/[0.02]" />
@@ -242,7 +249,7 @@ const About = () => {
         {/* ── Our Origins ── */}
         <section id="origins" className="screen-section space-y-10">
           <Hairline />
-          <SectionHeading eyebrow="Our Origins" title="Where StackHacks Began" />
+          <SectionHeading title="Where StackHacks Began" />
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,760px)_minmax(0,1fr)] lg:items-center lg:gap-16">
             {/* Copy can move to Sanity later (see report); hardcoded for now */}
             {/* Sizes sit on each paragraph: the base p rule in index.css would override inherited sizes */}
@@ -263,7 +270,7 @@ const About = () => {
 
         {/* ── How to Get Involved ── */}
         <section id="get-involved" className="screen-section space-y-10">
-          <SectionHeading eyebrow="Join the Community" title="How to Get Involved" />
+          <SectionHeading title="How to Get Involved" />
 
           <ol
             className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
@@ -313,39 +320,11 @@ function OriginsSteps() {
           <span aria-hidden="true" className="absolute -left-11 top-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-accent/60 bg-background shadow-[0_0_14px_-4px_rgba(254,178,58,0.6)]">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           </span>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-secondary">{step.label}</p>
+          <p className="text-sm font-medium text-secondary">{step.label}</p>
           <p className="mt-1.5 text-lg sm:text-xl font-semibold tracking-tight text-primary">{step.title}</p>
         </Reveal>
       ))}
     </ol>
-  )
-}
-
-/** One About stat: gold icon, count-up number, underline accent and label in a glass card. */
-function StatCard({ stat, index = 0 }) {
-  const Icon = stat.icon
-  // Signature moment: a soft gold light sweeps across each card once as the row enters
-  const ref = useRef(null)
-  const entered = useInView(ref, { once: true, amount: 0.6 })
-  return (
-    <div
-      ref={ref}
-      style={{ '--sweep-delay': `${0.15 + index * STAGGER}s` }}
-      className={`stat-card card-shine group ${entered ? 'is-entered' : ''} relative h-full overflow-hidden rounded-2xl border border-accent/25 bg-white/[0.025] px-3 py-6 sm:px-6 sm:py-8 text-center shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_28px_-14px_rgba(254,178,58,0.35)] transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_0_40px_-10px_rgba(254,178,58,0.55),0_24px_44px_-24px_rgba(0,0,0,0.9)]`}
-    >
-      <CornerTraces hover />
-      <span aria-hidden="true" className="stat-sweep" />
-      <div className="flex flex-col items-center gap-3">
-        <Icon aria-hidden="true" className="h-5 w-5 text-accent" strokeWidth={1.75} />
-        <p className="whitespace-nowrap text-[clamp(2.25rem,9vw,3.5rem)] font-semibold leading-none tracking-tight bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">
-          <CountUp to={stat.value} suffix={stat.suffix} />
-        </p>
-        <span aria-hidden="true" className="h-px w-8 bg-gradient-to-r from-transparent via-accent to-transparent" />
-        <p className="min-h-[2.75em] lg:min-h-0 text-[10px] sm:text-xs font-semibold uppercase leading-snug tracking-[0.16em] sm:tracking-[0.2em] text-primary/80">
-          {stat.label}
-        </p>
-      </div>
-    </div>
   )
 }
 

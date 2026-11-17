@@ -111,7 +111,7 @@ export function ProjectModal({ project, details = {}, onClose }) {
         <div className="space-y-6 px-5 pb-8 sm:px-8 sm:pb-10">
           <div className="space-y-2">
             {project.date && (
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{project.date}</p>
+              <p className="text-sm font-semibold text-accent">{project.date}</p>
             )}
             <h2 id={titleId} className="text-2xl sm:text-3xl font-semibold tracking-tight text-primary">
               {project.title}
@@ -124,7 +124,7 @@ export function ProjectModal({ project, details = {}, onClose }) {
 
           {other.map((s, i) => (
             <div key={i} className="space-y-1.5">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{s.heading}</h3>
+              <h3 className="text-sm font-semibold text-accent">{s.heading}</h3>
               <p className="text-sm leading-relaxed text-secondary">{s.body}</p>
             </div>
           ))}
@@ -133,7 +133,7 @@ export function ProjectModal({ project, details = {}, onClose }) {
             <dl className="grid gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-2">
               {team.map((s, i) => (
                 <div key={i} className="space-y-1.5">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{s.heading}</dt>
+                  <dt className="text-sm font-semibold text-accent">{s.heading}</dt>
                   <dd className="text-sm leading-relaxed text-primary">{s.body?.trim()}</dd>
                 </div>
               ))}
@@ -186,7 +186,7 @@ export default function ProjectCard({ project, details, featured = false, onOpen
       {/* Body */}
       <div className={`flex flex-1 flex-col gap-3 p-6 sm:p-7 ${featured ? "md:justify-center" : ""}`}>
         {project.date && (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">{project.date}</p>
+          <p className="text-xs font-semibold text-accent">{project.date}</p>
         )}
         <h3 className={`font-semibold leading-snug text-primary ${featured ? "text-2xl" : "text-xl"}`}>{project.title}</h3>
         {about && (

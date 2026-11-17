@@ -110,9 +110,6 @@ function Home() {
               transition={{ duration: 0.5 }}
               className="mb-10 text-center space-y-2"
             >
-              <p className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent">
-                Focus Tracks
-              </p>
               <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-primary">
                 Active Project Teams
               </h2>

@@ -112,11 +112,11 @@ export default function FoundersCarousel({ founders, breakAfter }) {
                 transition={slide}
                 className="[grid-area:1/1] space-y-3"
               >
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary/60 tabular-nums">
+                <span className="block text-xs font-medium text-secondary/60 tabular-nums">
                   Founder {String(active + 1).padStart(2, '0')} / {String(length).padStart(2, '0')}
                 </span>
                 <h3 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-primary">{current.name}</h3>
-                <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.28em] leading-relaxed text-accent">
+                <p className="text-sm sm:text-base font-semibold leading-relaxed text-accent">
                   {expandTitle(current.position)}
                 </p>
                 {current.bio && <p className="pt-1 text-sm text-secondary leading-relaxed max-w-xl">{current.bio}</p>}

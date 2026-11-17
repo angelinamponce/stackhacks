@@ -133,7 +133,6 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
                   isActive ? "opacity-100 translate-y-0" : "pointer-events-none invisible opacity-0 translate-y-3"
                 }`}
               >
-                <span className="eyebrow">{item.subtitle || "Who We Are"}</span>
                 <h2 className="page-title text-primary">
                   {item.title}
                 </h2>

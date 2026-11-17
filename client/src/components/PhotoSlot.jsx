@@ -63,7 +63,7 @@ export default function PhotoSlot({ photo, aspect = 'aspect-[4/3]', className = 
       ) : (
         <div className={`${frame} ${edge} flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#18181b] to-[#0f0f11] text-center`}>
           <Camera aria-hidden="true" className="h-7 w-7 text-accent/60" strokeWidth={1.5} />
-          <span className="px-4 text-xs font-medium uppercase tracking-[0.2em] text-secondary">{photo.placeholder || 'Photo coming soon'}</span>
+          <span className="px-4 text-sm text-secondary">{photo.placeholder || 'Photo coming soon'}</span>
         </div>
       )}
       {captionContent ? (

@@ -11,6 +11,25 @@ const H_LEFT = 50.2 // % inset from the left that isolates the H
 const LINE_BOX = { left: '46.67%', width: '2.78%', top: '9.86%', height: '73.9%' }
 const TRAVEL = 28 // % of the mark width the letters travel out of the line
 
+// Intro pacing. Every step of the full intro is scaled by INTRO_SPEED (< 1 = faster), so the
+// sequence, easing and relative stagger stay identical. The page fade-in in index.css reads it
+// through --intro-speed. Skip, Escape and the reduced-motion path keep their own fixed timings.
+const INTRO_SPEED = 0.75
+const BASE_MS = {
+  line: 650, //       1. gold line draws
+  letters: 1000, //   2. S and H slide out of the line
+  pause: 300, //      beat before the mark moves
+  move: 900, //       3. mark glides to centre-left
+  wipeDelay: 500, //  4. word starts wiping in this long into the move
+  wipe: 800, //          word wipe
+  hold: 650, //       hold the finished lockup
+  lockupOut: 450, //  5. lockup fades and lifts
+  bgOut: 600, //         overlay dissolves
+  safety: 8000, //    fallback: the overlay always goes away
+}
+const MS = Object.fromEntries(Object.entries(BASE_MS).map(([k, v]) => [k, Math.round(v * INTRO_SPEED)]))
+const sec = (ms) => ms / 1000 // framer-motion takes seconds
+
 const EASE_OUT = [0.22, 1, 0.36, 1]
 const EASE_IN_OUT = [0.65, 0, 0.35, 1]
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -41,6 +60,7 @@ export default function IntroSplash() {
     const html = document.documentElement
     const prevOverflow = html.style.overflow
     html.style.overflow = 'hidden'
+    if (mode === 'full') html.style.setProperty('--intro-speed', String(INTRO_SPEED)) // reduced keeps 1x
     try { sessionStorage.setItem('sh-intro-played', '1') } catch { /* storage unavailable: intro may replay */ }
 
     const [overlay, bg, lockup, mark, s, h, line, word] = [overlayRef, bgRef, lockupRef, markRef, sRef, hRef, lineRef, wordRef].map((r) => r.current)
@@ -69,13 +89,13 @@ export default function IntroSplash() {
       running.forEach((c) => c.stop())
       try {
         await lockup.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-14px)' }],
-          { duration: quick ? 220 : 450, easing: 'ease-in', fill: 'forwards' }).finished
+          { duration: quick ? 220 : MS.lockupOut, easing: 'ease-in', fill: 'forwards' }).finished
       } catch { /* interrupted */ }
       html.removeAttribute('data-intro') // nav brand + page fade in (CSS), hero stagger starts
       html.style.overflow = prevOverflow
       window.dispatchEvent(new Event(INTRO_DONE_EVENT))
       try {
-        await bg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: quick ? 300 : 600, easing: 'ease-out', fill: 'forwards' }).finished
+        await bg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: quick ? 300 : MS.bgOut, easing: 'ease-out', fill: 'forwards' }).finished
       } catch { /* interrupted */ }
       overlay.style.pointerEvents = 'none'
       if (!cancelled) setDone(true)
@@ -97,23 +117,23 @@ export default function IntroSplash() {
       }
 
       // 1. Gold line draws top to bottom at the screen centre
-      await run(line, { scaleY: [0, 1] }, { duration: 0.65, ease: [0.65, 0, 0.35, 1] })
+      await run(line, { scaleY: [0, 1] }, { duration: sec(MS.line), ease: EASE_IN_OUT })
       if (!alive()) return
 
       // 2. S and H slide out of the line together (no pop, no overshoot)
-      await run(0, 1, { duration: 1.0, ease: EASE_OUT, onUpdate: setLetters })
+      await run(0, 1, { duration: sec(MS.letters), ease: EASE_OUT, onUpdate: setLetters })
       if (!alive()) return
-      await wait(300)
+      await wait(MS.pause)
       if (!alive()) return
 
       // 3. Mark glides to centre-left (fixed size); 4. the word wipes in as it settles
-      const move = run(mark, { x: [centerShift, 0] }, { duration: 0.9, ease: EASE_IN_OUT })
-      await wait(500)
+      const move = run(mark, { x: [centerShift, 0] }, { duration: sec(MS.move), ease: EASE_IN_OUT })
+      await wait(MS.wipeDelay)
       if (!alive()) return
-      const wipe = run(word, { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-18, 0], opacity: [0, 1] }, { duration: 0.8, ease: EASE_OUT })
+      const wipe = run(word, { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-18, 0], opacity: [0, 1] }, { duration: sec(MS.wipe), ease: EASE_OUT })
       await Promise.all([move, wipe])
       if (!alive()) return
-      await wait(650) // hold the finished lockup
+      await wait(MS.hold) // hold the finished lockup
       if (alive()) reveal(false)
     }
 
@@ -130,7 +150,7 @@ export default function IntroSplash() {
 
     const onKey = (e) => { if (e.key === 'Escape') reveal(true) }
     window.addEventListener('keydown', onKey)
-    const safety = setTimeout(() => reveal(true), 8000) // the overlay always goes away
+    const safety = setTimeout(() => reveal(true), MS.safety) // the overlay always goes away
 
     return () => {
       cancelled = true

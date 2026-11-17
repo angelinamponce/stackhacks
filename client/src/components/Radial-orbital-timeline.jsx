@@ -278,7 +278,7 @@ export default function RadialOrbitalTimeline({ timelineData }) {
                   <CardFooter className="mt-0 flex flex-col items-stretch gap-3 border-t border-white/10 pt-4">
                     {openItem.relatedIds?.length ? (
                       <>
-                        <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary">
                           <Link2 className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
                           Connected nodes
                         </div>

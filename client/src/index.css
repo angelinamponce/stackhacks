@@ -129,11 +129,6 @@
            transition-all duration-300 hover:border-white/20;
   }
 
-  /* Section eyebrow: a small, plain label in muted gray (no rule, no wide tracking) */
-  .eyebrow {
-    @apply inline-flex items-center text-[13px] sm:text-sm font-medium text-secondary;
-  }
-
   /* Glass panel with a hairline gold edge */
   .glass-card {
     @apply relative rounded-3xl border border-white/[0.08] bg-white/[0.025] backdrop-blur-xl
@@ -344,10 +339,11 @@ html { scroll-padding-top: 4.5rem; }
 }
 
 /* ── First-visit intro (components/IntroSplash.jsx) ── */
-/* The page, circuits and nav brand stay hidden under the intro, then fade in at handoff */
-[data-nav-brand] { transition: opacity 0.6s ease 0.15s; }
+/* The page, circuits and nav brand stay hidden under the intro, then fade in at handoff.
+   --intro-speed is set by IntroSplash from its INTRO_SPEED constant so this stays in step with the overlay. */
+[data-nav-brand] { transition: opacity calc(0.6s * var(--intro-speed, 1)) ease calc(0.15s * var(--intro-speed, 1)); }
 :root[data-intro] [data-nav-brand] { opacity: 0; }
-main, .circuit-board { transition: opacity 0.7s ease; }
+main, .circuit-board { transition: opacity calc(0.7s * var(--intro-speed, 1)) ease; }
 :root[data-intro] main,
 :root[data-intro] .circuit-board { opacity: 0; }
 
@@ -358,7 +354,6 @@ main, .circuit-board { transition: opacity 0.7s ease; }
   scroll-margin-top: 4rem;
 }
 .landing-hero { padding-top: clamp(12px, 3svh, 40px); padding-bottom: clamp(44px, 7svh, 76px); }
-.landing-eyebrow { margin-bottom: clamp(8px, 1.8svh, 16px); }
 .landing-title { font-size: clamp(2rem, min(6.2vw, 6.2svh), 3.9rem); }
 .landing-copy { margin-top: clamp(12px, 2.6svh, 28px); }
 .landing-actions { margin-top: clamp(18px, 4svh, 44px); }
@@ -496,63 +491,10 @@ main, .circuit-board { transition: opacity 0.7s ease; }
 /* Deep-linked project card (Projects.jsx): brief gold highlight */
 li[data-highlight] article { box-shadow: 0 0 0 2px rgba(254, 178, 58, 0.85), 0 0 48px -8px rgba(254, 178, 58, 0.7); transition: box-shadow 0.4s ease; }
 
-/* ── Community landing hero (components/CommunityHero.jsx) ── */
-.community-hero {
-  min-height: calc(100vh - 4rem);
-  min-height: calc(100svh - 4rem);
-  scroll-margin-top: 4rem;
-}
-/* Three dim, blurred event photos: each drifts slowly (Ken Burns) and they crossfade on a 27s loop */
-.community-backdrop {
-  position: absolute;
-  inset: -6%;
-  background-size: cover;
-  background-position: center;
-  filter: blur(6px) brightness(0.14) saturate(0.85);
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: community-crossfade 27s linear infinite, community-drift 27s ease-in-out infinite;
-  animation-delay: var(--backdrop-delay, 0s), var(--backdrop-delay, 0s);
-}
-@keyframes community-crossfade {
-  0%   { opacity: 0; }
-  7%   { opacity: 1; }
-  33%  { opacity: 1; }
-  41%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes community-drift {
-  0%, 100% { transform: scale(1.06) translate3d(-1.5%, -1%, 0); }
-  50%      { transform: scale(1.14) translate3d(1.5%, 1%, 0); }
-}
 @media (prefers-reduced-motion: reduce) {
-  /* Static backdrop: just the first photo, no drift or crossfade */
-  .community-backdrop { animation: none; transform: scale(1.06); }
-  .community-backdrop:first-child { opacity: 1; }
-}
-
-/* About stats: a soft gold light sweeps across each card once as the row enters (staggered) */
-.stat-sweep {
-  position: absolute;
-  inset: 0;
-  z-index: 16;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 35%, rgba(255, 214, 140, 0.18) 50%, transparent 65%);
-  transform: translateX(-120%);
-}
-@keyframes stat-sweep {
-  from { transform: translateX(-120%); }
-  to   { transform: translateX(120%); }
-}
-.stat-card.is-entered .stat-sweep { animation: stat-sweep 1.2s cubic-bezier(0.45, 0, 0.55, 1) var(--sweep-delay, 0s) both; }
-@media (prefers-reduced-motion: reduce) {
-  .stat-sweep { display: none; }
   /* No cursor spotlight for reduced motion */
   .spotlight::before, .spotlight-border::after { display: none; }
 }
-
-/* About stats cards: shine sweep on hover (reuses .card-shine) */
-.stat-card:hover.card-shine::after { transform: translateX(120%); }
 
 
 /* ═══ Editorial restyle: section themes and display typography ═══ */
@@ -614,8 +556,7 @@ h1 { font-weight: 300; }
 /* Highlighted names and figures inside reading copy */
 .hl { color: var(--color-accent); font-weight: 500; }
 
-/* Effects retired by the editorial restyle (cursor spotlight, card shine sweeps, stat sweep).
+/* Effects retired by the editorial restyle (cursor spotlight, card shine sweeps).
    The markup stays in place, so any of them can be brought back by deleting its line here. */
 .spotlight::before, .spotlight-border::after { display: none; }
 .card-shine::after { display: none; }
-.stat-sweep { display: none; }

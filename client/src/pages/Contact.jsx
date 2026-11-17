@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronDown, Send, Mail, MapPin, Loader2 } from "lucide-react"
+import { ChevronDown, Send, Mail, MapPin, Loader2, Instagram, MessageCircle } from "lucide-react"
 import Modal from '../components/Modal'
 import FAQ from '../components/FAQ'
 import { Hairline } from '../components/Interactive'
+
+// TODO(content): paste the StackHacks Discord invite link here; the Discord line stays hidden until it's set
+const DISCORD_URL = ""
 
 const Contact = () => {
   const [result, setResult] = useState("")
@@ -40,23 +43,24 @@ const Contact = () => {
 
   return (
     <div className="w-full">
-      <div data-circuit-section className="screen-section max-w-6xl mx-auto px-6">
-        <div className="min-h-[70vh] grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+      {/* Starts near the top (not vertically centred) so the form is in view right away */}
+      <div
+        data-circuit-section
+        className="screen-section max-w-6xl mx-auto px-6"
+        style={{ justifyContent: 'flex-start', paddingTop: 'clamp(24px, 5svh, 56px)' }}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           
           {/* Left Column: Editorial Copy & Context */}
           <motion.div 
-            className="lg:col-span-5 space-y-6"
+            className="lg:col-span-5 space-y-5"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }} 
           >
-            <p className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-accent mb-2">
-              Get In Touch
-            </p>
-
             <h1 className="page-title text-primary">
               Any questions <br />
-              <span className="bg-gradient-to-b from-[#ffe2a8] to-accent bg-clip-text text-transparent">for our team?</span>
+              <span className="text-accent">for our team?</span>
             </h1>
 
             <p className="text-secondary text-base leading-relaxed">
@@ -70,8 +74,31 @@ const Contact = () => {
               </div>
               <div className="flex items-center gap-3 text-sm text-secondary">
                 <Mail className="w-4 h-4 text-accent shrink-0" />
-                <span>stackhacksbu@gmail.com</span>
+                <a href="mailto:stackhacksbu@gmail.com" className="hover:text-primary transition-colors">stackhacksbu@gmail.com</a>
               </div>
+              <div className="flex items-center gap-3 text-sm text-secondary">
+                <Instagram className="w-4 h-4 text-accent shrink-0" />
+                <span>
+                  or DM us{' '}
+                  <a
+                    href="https://www.instagram.com/stackhacksbu/?hl=en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-accent transition-colors"
+                  >
+                    @stackhacksbu
+                  </a>{' '}
+                  on Instagram
+                </span>
+              </div>
+              {DISCORD_URL && (
+                <div className="flex items-center gap-3 text-sm text-secondary">
+                  <MessageCircle className="w-4 h-4 text-accent shrink-0" />
+                  <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">
+                    Join our Discord
+                  </a>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -88,8 +115,8 @@ const Contact = () => {
               <form className="space-y-5 relative z-10" onSubmit={submitForm}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <label className="block text-xs uppercase tracking-wider text-secondary font-medium">
-                      Your Name <span className="text-accent">*</span>
+                    <label className="block text-sm text-secondary font-medium">
+                      Your name <span className="text-accent">*</span>
                     </label>
                     <input
                       required
@@ -100,8 +127,8 @@ const Contact = () => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="block text-xs uppercase tracking-wider text-secondary font-medium">
-                      Email Address <span className="text-accent">*</span>
+                    <label className="block text-sm text-secondary font-medium">
+                      Email address <span className="text-accent">*</span>
                     </label>
                     <input
                       required
@@ -114,7 +141,7 @@ const Contact = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs uppercase tracking-wider text-secondary font-medium">
+                  <label className="block text-sm text-secondary font-medium">
                     Message <span className="text-accent">*</span>
                   </label>
                   <textarea
@@ -126,7 +153,7 @@ const Contact = () => {
                   />
                 </div>
 
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={loading}
@@ -144,10 +171,6 @@ const Contact = () => {
                       </>
                     )}
                   </button>
-
-                  <span className="text-xs text-secondary/60">
-                    We usually respond within 24–48 hours.
-                  </span>
                 </div>
               </form>
             </div>
@@ -158,13 +181,13 @@ const Contact = () => {
         {/* Transition indicator to FAQ */}
         <motion.div 
           onClick={scrollToFAQ}
-          className="cursor-pointer flex flex-col items-center gap-2 pt-16 group mx-auto"
+          className="cursor-pointer flex flex-col items-center gap-2 pt-12 group mx-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
         >
-          <span className="text-secondary/70 text-xs uppercase tracking-wider group-hover:text-primary transition-colors">
-            Frequently Asked Questions
+          <span className="text-secondary/70 text-sm group-hover:text-primary transition-colors">
+            Frequently asked questions
           </span>
           <motion.div
             animate={{ y: [0, 6, 0] }}

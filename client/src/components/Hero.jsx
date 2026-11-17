@@ -105,16 +105,6 @@ export default function Hero() {
         <div className="relative mx-auto flex w-full max-w-6xl flex-col px-6 lg:block">
           <div ref={textRef} className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
 
-            {/* Clean Typographic Eyebrow */}
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={enter}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="landing-eyebrow text-[11px] sm:text-xs font-medium tracking-[0.28em] uppercase text-accent/90"
-            >
-              Binghamton University &middot; Student Tech Collective
-            </motion.p>
-
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
               animate={enter}
@@ -191,9 +181,9 @@ export default function Hero() {
         <div className="relative max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center gap-[clamp(8px,1.4svh,14px)] md:gap-7">
             <div className="shrink-0 text-center md:border-r md:border-white/10 md:pr-7 md:text-left">
-              <span className="strip-label inline-flex max-w-[16rem] items-center justify-center gap-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.26em] text-primary/85 md:max-w-none md:whitespace-nowrap">
+              <span className="strip-label inline-flex max-w-[16rem] items-center justify-center gap-3 text-sm font-medium leading-relaxed text-primary/85 md:max-w-none md:whitespace-nowrap">
                 <span aria-hidden="true" className="h-px w-6 shrink-0 bg-gradient-to-r from-transparent to-accent/70 md:hidden" />
-                <span>Our Professional Experience</span>
+                <span>Our professional experience</span>
                 <span aria-hidden="true" className="h-px w-6 shrink-0 bg-gradient-to-l from-transparent to-accent/70 md:hidden" />
               </span>
             </div>
