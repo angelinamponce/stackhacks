@@ -357,6 +357,24 @@ html { scroll-padding-top: 4.5rem; }
   pointer-events: none;
 }
 
+/* About "Our Story" circuit emblem (components/CircuitEmblem.jsx): leaf and dove nodes shimmer */
+@keyframes emblem-shimmer {
+  0%, 100% { fill: #D98A2B; }
+  50%      { fill: #FFE2A8; }
+}
+.emblem-shimmer { animation: emblem-shimmer 3s ease-in-out infinite; }
+/* Desktop: full strength around the globe and sprout, fading to ~45% (about 0.18 overall) on the
+   hands where they pass behind the paragraph */
+@media (min-width: 768px) {
+  .circuit-emblem {
+    -webkit-mask-image: radial-gradient(ellipse 62% 56% at 52% 38%, #000 55%, rgba(0, 0, 0, 0.43) 100%);
+    mask-image: radial-gradient(ellipse 62% 56% at 52% 38%, #000 55%, rgba(0, 0, 0, 0.43) 100%);
+  }
+}
+[data-paused] .emblem-shimmer,
+:root[data-tab-hidden] .emblem-shimmer { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .emblem-shimmer { animation: none; } }
+
 /* ── First-visit intro (components/IntroSplash.jsx) ── */
 /* The page, circuits and nav brand stay hidden under the intro, then fade in at handoff.
    --intro-speed is set by IntroSplash from its INTRO_SPEED constant so this stays in step with the overlay. */
@@ -565,6 +583,18 @@ h1 { font-weight: 300; }
 /* Pages that want a stronger hierarchy (E-Board, Events): thicker serif titles */
 .headings-bold h2 { font-weight: 600; letter-spacing: -0.025em; }
 /* Every page's opening title: one weight and one size scale (keep after .landing-title) */
+/* "Meet the Founders" (About): centered hero-style heading with a faint warm glow */
+.founders-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.75rem, 5vw, 4.25rem);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  text-align: center;
+  color: var(--color-primary);
+  text-shadow: 0 0 30px rgba(245, 166, 35, 0.2);
+}
+
 .page-title {
   font-family: var(--font-display);
   font-weight: 500;

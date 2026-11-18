@@ -4,6 +4,7 @@ import { client } from '../sanityClient'
 import { CircularDisplay } from '../components/CircularDisplay'
 import FoundersCarousel from '../components/FoundersCarousel'
 import AsciiBrain from '../components/AsciiBrain'
+import CircuitEmblem from '../components/CircuitEmblem'
 import { Reveal, Hairline, STAGGER } from '../components/Interactive'
 import { COUNT, SESSION_KEY, clamp01, easeOut, now, powerOn, timeline } from '../lib/powerOn'
 import { useIntroDone } from '../lib/intro'
@@ -346,7 +347,17 @@ const About = () => {
             <div className="h-[25rem] animate-pulse rounded-3xl bg-white/[0.02]" />
           ) : (
             // Autoplay waits for the landing so the first slide is the one that boots up
-            <CircularDisplay testimonials={about} autoplay={boot.done} boot={boot.mode === 'play'} />
+            <CircularDisplay
+              testimonials={about}
+              autoplay={boot.done}
+              boot={boot.mode === 'play'}
+              backdrop={
+                // Hands-globe-sprout emblem behind the copy. Desktop: the globe and sprout sit in the open
+                // space right of the "About Us" heading, reaching into the right margin, with the hands
+                // dimmed by a mask where they pass behind the paragraph. Stacked layout: small, 12%.
+                <CircuitEmblem className="circuit-emblem absolute -top-14 right-0 z-0 h-[232px] w-[200px] opacity-[0.12] md:-top-28 md:-right-4 md:h-[348px] md:w-[300px] md:opacity-[0.42] lg:-top-32 lg:-right-8 lg:h-[400px] lg:w-[345px] xl:-top-40 xl:-right-28 xl:h-[480px] xl:w-[414px]" />
+              }
+            />
           )}
 
           {loadError && <LoadError what="the latest club stats and photos" />}
@@ -372,12 +383,16 @@ const About = () => {
 
         {/* ── Meet the Founders ── */}
         <section id="founders" className="screen-section relative space-y-10">
-          {/* ASCII head-with-brain in the empty top-right corner, behind the heading and cards.
-              Sized so the face stays clear of the top row of cards; hidden below lg, where there's no room. */}
-          <AsciiBrain ref={brainRef} className="absolute right-0 -top-6 z-0 hidden lg:block h-[180px] w-[150px] xl:h-[214px] xl:w-[176px]" />
-
-          <div className="relative z-10">
-            <SectionHeading title="Meet the Founders" />
+          {/* Centered title with the ASCII head-and-brain: top-right beside it on wide screens (nudged
+              into the margin so the face clears the top row of cards), stacked compactly above it below xl */}
+          <div className="relative z-10 flex flex-col items-center gap-3 xl:block">
+            <AsciiBrain
+              ref={brainRef}
+              className="relative h-[176px] w-[146px] xl:absolute xl:-right-14 xl:-top-16 xl:h-[262px] xl:w-[205px]"
+            />
+            <Reveal>
+              <h2 className="founders-title">Meet the Founders</h2>
+            </Reveal>
           </div>
 
           {loading ? (

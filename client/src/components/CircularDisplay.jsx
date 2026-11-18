@@ -54,7 +54,10 @@ function BootText({ text, className }) {
  * `boot`: render the first slide's heading/paragraph, the photo stack and the controls with the
  * hooks the About page's "power on" landing animates (see pages/About + lib/powerOn).
  */
-export const CircularDisplay = ({ testimonials = [], autoplay = true, boot = false }) => {
+/**
+ * `backdrop`: optional decorative element drawn behind the story copy (it positions itself).
+ */
+export const CircularDisplay = ({ testimonials = [], autoplay = true, boot = false, backdrop = null }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduce = useReducedMotion();
@@ -149,8 +152,9 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true, boot = fal
 
       {/* Story copy: every slide shares one grid cell, so the block keeps the
           height of the longest slide and nothing below it jumps. */}
-      <div className="flex flex-col gap-8">
-        <div className="grid" aria-live="polite">
+      <div className="relative flex flex-col gap-8">
+        {backdrop}
+        <div className="relative z-10 grid" aria-live="polite">
           {testimonials.map((item, index) => {
             const isActive = index === activeIndex;
             return (
@@ -180,7 +184,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true, boot = fal
         </div>
 
         {length > 1 && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3" data-boot-controls={boot || undefined}>
+          <div className="relative z-10 flex flex-wrap items-center gap-x-5 gap-y-3" data-boot-controls={boot || undefined}>
             <div className="flex items-center gap-2.5">
               <button type="button" onClick={() => go(-1)} aria-label="Previous slide" className="btn-icon">
                 <ArrowLeft className="w-4 h-4" />
