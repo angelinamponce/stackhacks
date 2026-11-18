@@ -7,6 +7,8 @@ import SHTrans from "/SHTrans.png"
 import { Reveal } from "../components/Interactive"
 import { Link } from "react-router-dom"
 import PortraitCard from "../components/PortraitCard"
+import PageHero from "../components/PageHero"
+import AsciiTeamGear from "../components/AsciiTeamGear"
 import LoadError from '../components/LoadError'
 import CompanyChip from '../components/CompanyChip'
 import CornerTraces from '../components/os/CornerTraces'
@@ -424,6 +426,7 @@ const Eboard = () => {
   const cardRefsRef = useRef(null)
   const returnRef = useRef(null)
   const ordered = useMemo(() => orderMembers(members.filter((m) => !isHidden(m))), [members])
+  const cardsRef = useRef(null)
 
   const close = useCallback(() => setOpen(null), [])
   const navigate = useCallback((dir) => setOpen((o) => {
@@ -463,20 +466,16 @@ const Eboard = () => {
   }, [])
 
   return (
-    <div
-      data-circuit-section
-      className="headings-bold screen-section w-full max-w-6xl mx-auto px-6"
-      style={{ paddingTop: 'clamp(56px, 10svh, 120px)' }}
-    >
-      <Reveal className="text-center max-w-2xl mx-auto mb-10 space-y-3">
-        <h1 className="page-title text-primary">
-          Meet the <span className="text-accent">Executive Board</span>
-        </h1>
-        <p className="text-secondary text-base leading-relaxed">
-          Meet the student engineers and organizers driving technical tracks, hackathon initiatives, and community mentorship at Binghamton University.
-        </p>
-      </Reveal>
+    <div data-circuit-section className="headings-bold w-full max-w-6xl mx-auto px-6 pb-24">
+      <PageHero
+        title={<>Meet the <span className="text-accent">Executive Board</span></>}
+        intro="Meet the student engineers and organizers driving technical tracks, hackathon initiatives, and community mentorship at Binghamton University."
+        art={<AsciiTeamGear className="mx-auto h-[280px] w-[280px] lg:h-[clamp(480px,64svh,560px)] lg:w-[clamp(480px,64svh,560px)]" />}
+        next={() => cardsRef.current}
+        scrollLabel="Scroll to the Executive Board members"
+      />
 
+      <div ref={cardsRef} className="scroll-mt-20" />
       {loading ? (
         <div className="text-center text-secondary/50 py-20">Loading Executive Board...</div>
       ) : ordered.length > 0 ? (

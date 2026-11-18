@@ -3,6 +3,8 @@ import { AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
 import { client } from '../sanityClient'
 import { Reveal, Hairline } from '../components/Interactive'
+import PageHero from '../components/PageHero'
+import AsciiClimb from '../components/AsciiClimb'
 import PhotoSlot from '../components/PhotoSlot'
 import PhotoGallery from '../components/PhotoGallery'
 import SpeakerPanel from '../components/SpeakerPanel'
@@ -119,11 +121,16 @@ const Community = () => {
   return (
     <div className="relative">
       <div className="max-w-6xl mx-auto px-6">
-        <Reveal className="pt-10 sm:pt-14">
-          <h1 className="page-title text-accent">Community</h1>
-          {/* Same type as the section descriptions (see SectionHeading) */}
-          <p className="mt-5 max-w-2xl text-secondary text-base sm:text-lg leading-relaxed">{communityIntro}</p>
-        </Reveal>
+        {/* Landing hero (same structure as the E-Board page): heading, divider and intro on the left,
+            ASCII scene of one member helping another climb on the right; the ceremony starts below the fold */}
+        <PageHero
+          title="Community"
+          titleClassName="text-accent"
+          intro={communityIntro}
+          art={<AsciiClimb className="mx-auto h-[280px] w-full max-w-[420px] lg:h-[clamp(480px,64svh,560px)] lg:max-w-none" />}
+          next={() => document.getElementById('ceremony')}
+          scrollLabel="Scroll to the End of Year Ceremony"
+        />
 
         {/* ── A. End of Year Ceremony ── (starts right under the title: no screen-height centering or full top padding) */}
         <section id="ceremony" aria-labelledby="ceremony-title" className="screen-section justify-start! pt-10! sm:pt-12! space-y-10">
