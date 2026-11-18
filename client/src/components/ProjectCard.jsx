@@ -1,4 +1,5 @@
 import { useId, useRef } from "react"
+import AsciiThumb from "./AsciiThumb"
 import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { ArrowUpRight, Code2, ExternalLink, Github, X } from "lucide-react"
@@ -162,10 +163,16 @@ export function ProjectModal({ project, details = {}, onClose }) {
 
 export default function ProjectCard({ project, details, featured = false, onOpen }) {
   const { about } = splitSections(project.sections)
+  const asciiRef = useRef(null)
+  const play = () => asciiRef.current?.play()
 
   return (
     <article
       {...spotlightHandlers}
+      // ASCII hover effect: mouse hover, keyboard focus, or a tap on touch screens
+      onPointerEnter={(e) => e.pointerType !== "touch" && play()}
+      onPointerDown={(e) => e.pointerType === "touch" && play()}
+      onFocus={(e) => e.target.matches(":focus-visible") && play()}
       className={`group spotlight spotlight-border relative flex h-full overflow-hidden rounded-[3px] border border-[#D4AF37]/55 bg-gradient-to-b from-[#161617] to-[#0f0f10]
         shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)]
         transition-[translate,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-[#D4AF37]
@@ -178,9 +185,21 @@ export default function ProjectCard({ project, details, featured = false, onOpen
           featured ? "aspect-[16/10] md:aspect-auto md:w-1/2 md:min-h-80 border-b md:border-b-0 md:border-r" : "aspect-[16/10] border-b"
         } border-white/[0.06]`}
       >
-        <div className="absolute inset-0 p-6 sm:p-8">
-          <Cover project={project} className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
-        </div>
+        {project.image ? (
+          <div className="absolute inset-0">
+            <AsciiThumb
+              ref={asciiRef}
+              src={project.image}
+              alt={project.title}
+              effect={project.asciiEffect || "default"}
+              fallbackClassName="p-6 sm:p-8"
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-0 p-6 sm:p-8">
+            <Cover project={project} />
+          </div>
+        )}
       </div>
 
       {/* Body */}

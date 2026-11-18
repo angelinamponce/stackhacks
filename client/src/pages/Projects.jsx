@@ -72,6 +72,7 @@ const Projects = () => {
           date,
           description,
           "image": image.asset->url,
+          asciiEffect,
           sections
         }`
 
