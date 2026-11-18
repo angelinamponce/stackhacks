@@ -375,6 +375,20 @@ html { scroll-padding-top: 4.5rem; }
 :root[data-tab-hidden] .emblem-shimmer { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .emblem-shimmer { animation: none; } }
 
+/* ── Community speakers accordion (pages/Community.jsx) ── */
+@media (min-width: 640px) {
+  .speaker-panel { flex: var(--grow, 1) 1 0%; transition: flex-grow 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+  .speaker-full, .speaker-mini { transition: opacity 0.3s ease; }
+  .speaker-panel:not([data-open]) .speaker-full { transition-duration: 0.15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .speaker-panel, .speaker-full, .speaker-mini { transition: none !important; }
+}
+
+/* Community gallery: a thumbnail swapped into the featured slot fades in over the previous photo */
+@keyframes gallery-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.gallery-fade-in { animation: gallery-fade-in 0.3s ease both; }
+
 /* ── First-visit intro (components/IntroSplash.jsx) ── */
 /* The page, circuits and nav brand stay hidden under the intro, then fade in at handoff.
    --intro-speed is set by IntroSplash from its INTRO_SPEED constant so this stays in step with the overlay. */
@@ -399,6 +413,14 @@ main, .circuit-board { transition: opacity calc(0.7s * var(--intro-speed, 1)) ea
 .landing-actions .btn-secondary { min-height: 2.875rem; padding: 0 1.5rem; }
 .landing-visual { margin-bottom: clamp(8px, 2.2svh, 32px); }
 .landing-logo { height: clamp(67px, 11.2svh, 180px); }
+/* ASCII SH mark (components/AsciiShLogo): the artwork's 310:388 proportions */
+.landing-ascii-logo { height: clamp(150px, 30svh, 280px); aspect-ratio: 310 / 388; }
+@media (min-width: 1024px) { .landing-ascii-logo { height: clamp(320px, 62svh, 580px); } }
+/* Hero boot-up (components/Hero.jsx): hidden until the intro reveals them; the text stays in the DOM */
+[data-hero-boot="pending"] h1,
+[data-hero-boot="pending"] [data-hero-char],
+[data-hero-boot="pending"] [data-hero-para],
+[data-hero-boot="pending"] [data-hero-actions] { opacity: 0; }
 @media (min-width: 640px) { .landing-logo { height: clamp(76px, 14.5svh, 180px); } }
 .landing-strip { padding-block: clamp(10px, 2svh, 26px); }
 @media (min-width: 1024px) {
@@ -434,6 +456,7 @@ main, .circuit-board { transition: opacity calc(0.7s * var(--intro-speed, 1)) ea
   .landing-title { font-size: 1.9rem; }
   .landing-copy { font-size: 0.9rem; line-height: 1.5; }
   .landing-logo { height: 52px; }
+  .landing-ascii-logo { height: 130px; }
   .landing-hero { padding-bottom: 16px; }
   .scroll-cue { display: none; }
   .landing-actions a { padding-inline: 0.9rem; }

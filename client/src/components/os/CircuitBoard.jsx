@@ -4,6 +4,7 @@ import { useReducedMotion } from 'framer-motion'
 import { GlowNode, RingNode, SoftPulse, TRACE_GOLD } from './CircuitParts'
 import { buildBoard, measurePage } from '../../lib/circuitLayout'
 import PowerOnLayer from './PowerOnLayer'
+import ScrollPulseLayer from './ScrollPulseLayer'
 import { powerOn } from '../../lib/powerOn'
 
 const modeFor = (w) => (w < 768 ? 'minimal' : w < 1024 ? 'medium' : 'full')
@@ -84,6 +85,12 @@ export default function CircuitBoard() {
           const r = section.getBoundingClientRect()
           next.powerZone = { top: r.top - o, bottom: r.bottom - o }
         }
+        // Blocks whose nearest margin circuits pulse as they scroll into view (see ScrollPulseLayer)
+        const o = wrap.getBoundingClientRect().top
+        next.pulseZones = [...root.querySelectorAll('[data-circuit-pulse]')].map((el) => {
+          const r = el.getBoundingClientRect()
+          return { el, top: r.top - o, bottom: r.bottom - o }
+        })
         setBoard(next)
       }, 180)
     }
@@ -243,6 +250,7 @@ export default function CircuitBoard() {
 
           {/* About page "power on" pulses and lit nodes (only while lib/powerOn is active) */}
           <PowerOnLayer board={board} />
+          <ScrollPulseLayer board={board} />
         </svg>
       )}
     </div>

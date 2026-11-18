@@ -5,7 +5,7 @@ import { Reveal } from '../components/Interactive'
 import { client } from '../sanityClient'
 import { projectDetails } from '../data/projectDetails'
 import { projectSlug, projectTrack } from '../lib/projects'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import LoadError from '../components/LoadError'
 
 const ALL = 'All'
@@ -49,6 +49,26 @@ const Projects = () => {
   const reduce = useReducedMotion()
   const closeModal = useCallback(() => setSelectedProject(null), [])
   const { hash } = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // ?filter=<track slug> (e.g. /projects?filter=ai from the Community page) picks the track on load
+  const urlFilter = searchParams.get('filter')
+  useEffect(() => {
+    if (loading || !urlFilter) return
+    const track = projects.map(projectTrack).find((t) => t && projectSlug(t) === urlFilter)
+    setFilter(track || ALL)
+  }, [loading, urlFilter, projects])
+
+  // Keep the URL in step with the pills, so a filtered view can be shared
+  const selectFilter = useCallback((name) => {
+    setFilter(name)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (name === ALL) next.delete('filter')
+      else next.set('filter', projectSlug(name))
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   // Deep links (e.g. from an E-Board involvement pill): scroll to that project card and highlight it
   useEffect(() => {
@@ -111,7 +131,7 @@ const Projects = () => {
         <div className="py-16 text-center text-secondary/50">Loading projects...</div>
       ) : projects.length > 0 ? (
         <div className="space-y-10">
-          {filters.length > 2 && <FilterPills options={filters} active={filter} onSelect={setFilter} />}
+          {filters.length > 2 && <FilterPills options={filters} active={filter} onSelect={selectFilter} />}
 
           <LayoutGroup>
             <motion.ul layout={!reduce} className="grid grid-cols-1 md:grid-cols-2 md:auto-rows-fr gap-6 lg:gap-8">

@@ -66,6 +66,7 @@ export const ceremony = {
   //   logoSrc is a local logo file; logo is a company title in the site's logo set (Sanity "company" docs);
   //   logoTone 'light' shows a dark logo on a light plate; with neither, a text chip shows
   //   headshot.sanityFounder: load the headshot from that person's Sanity founder document instead
+  //   description: optional one line shown when the speaker's panel is expanded (omit for none)
   speakers: [
     {
       role: 'Event Host', name: 'Angelina Ponce', title: 'Founder & Senior Advisor',
@@ -105,18 +106,19 @@ export const ceremony = {
     },
   ],
   // Full team names (the Projects page filters keep their short Sanity names)
+  //   track: the Projects page filter the team name links to (/projects?filter=<track>)
   teams: [
     {
-      src: aiTeam, alt: 'Four AI/ML team members in business attire standing in front of the End of Year Banquet screen', caption: 'AI/ML', placeholder: 'Team photo coming soon',
+      src: aiTeam, alt: 'Four AI/ML team members in business attire standing in front of the End of Year Banquet screen', caption: 'AI/ML', track: 'ai', placeholder: 'Team photo coming soon',
       more: [
         { src: aiTeamSlides1, alt: 'AI/ML team members presenting a VLM slide at the banquet, one speaking at the podium' },
         { src: aiTeamSlides2, alt: 'AI/ML team members presenting their Ink2Pixel title slide at the banquet' },
       ],
     },
-    { src: cyberSecurityTeam, alt: 'Four Cybersecurity team members smiling in front of the End of Year Banquet screen', caption: 'Cybersecurity', placeholder: 'Team photo coming soon' },
-    { src: webDevTeam, alt: 'Four Website Development team members in suits posing in front of the End of Year Banquet screen', caption: 'Website Development', placeholder: 'Team photo coming soon' },
+    { src: cyberSecurityTeam, alt: 'Four Cybersecurity team members smiling in front of the End of Year Banquet screen', caption: 'Cybersecurity', track: 'cyber-security', placeholder: 'Team photo coming soon' },
+    { src: webDevTeam, alt: 'Four Website Development team members in suits posing in front of the End of Year Banquet screen', caption: 'Website Development', track: 'web-dev', placeholder: 'Team photo coming soon' },
     {
-      src: recreatingAppsTeam, alt: 'Three Recreating Applications team members standing in a lounge beside a stone fireplace', caption: 'Recreating Applications', placeholder: 'Team photo coming soon',
+      src: recreatingAppsTeam, alt: 'Three Recreating Applications team members standing in a lounge beside a stone fireplace', caption: 'Recreating Applications', track: 'recreating-apps', placeholder: 'Team photo coming soon',
       more: [
         { src: recreatingAppsSlides1, alt: 'Recreating Applications team members presenting the B-Ranked tier list app on a large screen at the banquet' },
         { src: recreatingAppsSlides2, alt: 'Recreating Applications team members presenting a User Sign Up & Authentication slide at the banquet' },

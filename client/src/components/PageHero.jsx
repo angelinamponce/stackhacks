@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { ChevronDown } from "lucide-react"
+import CircuitDivider from "./CircuitDivider"
 
 /**
  * Landing hero shared by the E-Board and Community pages: heading, a short circuit-trace divider
@@ -23,12 +24,7 @@ export default function PageHero({ title, titleClassName = "text-primary", intro
     <section className="relative grid grid-cols-1 items-center gap-8 pb-12 pt-10 lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[45fr_55fr] lg:gap-6 lg:py-0">
       <div className="space-y-5 lg:pb-10">
         <h1 className={`page-title text-left ${titleClassName}`}>{title}</h1>
-        {/* Short circuit-trace divider */}
-        <svg aria-hidden="true" width="168" height="26" viewBox="0 0 168 26" fill="none" className="block">
-          <path d="M5 6 H72 V20 H163" stroke="#F5A623" strokeOpacity="0.7" strokeWidth="1.3" strokeLinejoin="round" />
-          {[[5, 6], [72, 6], [72, 20]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r="2.6" fill="#F5A623" />)}
-          <circle cx="163" cy="20" r="4" fill="none" stroke="#F5A623" strokeWidth="1.3" />
-        </svg>
+        <CircuitDivider />
         {intro && <p className="max-w-md text-left text-base leading-relaxed text-secondary sm:text-lg">{intro}</p>}
       </div>
 
