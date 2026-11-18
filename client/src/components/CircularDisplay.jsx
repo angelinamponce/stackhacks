@@ -26,7 +26,35 @@ const SLOT_STYLES = {
   hidden: { x: "0%", y: 8, scale: 0.75, rotateY: 0, rotateZ: 0, opacity: 0, zIndex: 1, filter: "blur(3px) brightness(0.5)" },
 };
 
-export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
+/** Heading split into characters for the About "power on" typing (full title stays in the DOM). */
+function BootHeading({ title }) {
+  return (
+    <h2 className="page-title text-primary" data-boot-heading>
+      <span className="sr-only">{title}</span>
+      <span aria-hidden="true" className="relative inline-block">
+        {[...title].map((c, i) => (
+          <span key={i} data-boot-char>{c}</span>
+        ))}
+        <span data-boot-cursor className="boot-cursor" />
+      </span>
+    </h2>
+  );
+}
+
+/** Paragraph split into words so it can rise in line by line (still one readable paragraph). */
+function BootText({ text, className }) {
+  return (
+    <p className={className} data-boot-text>
+      {text.split(/(\s+)/).map((part, i) => (/\s/.test(part) || !part ? part : <span key={i} data-w className="inline-block">{part}</span>))}
+    </p>
+  );
+}
+
+/**
+ * `boot`: render the first slide's heading/paragraph, the photo stack and the controls with the
+ * hooks the About page's "power on" landing animates (see pages/About + lib/powerOn).
+ */
+export const CircularDisplay = ({ testimonials = [], autoplay = true, boot = false }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduce = useReducedMotion();
@@ -69,7 +97,7 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
       onBlur={() => setPaused(false)}
     >
       {/* Photo stack with depth + parallax */}
-      <div>
+      <div data-boot-media={boot || undefined}>
         <motion.div
           role="region"
           aria-roledescription="carousel"
@@ -133,17 +161,26 @@ export const CircularDisplay = ({ testimonials = [], autoplay = true }) => {
                   isActive ? "opacity-100 translate-y-0" : "pointer-events-none invisible opacity-0 translate-y-3"
                 }`}
               >
-                <h2 className="page-title text-primary">
-                  {item.title}
-                </h2>
-                <p className="text-secondary text-base sm:text-lg leading-relaxed max-w-xl">{item.text}</p>
+                {boot && index === 0 ? (
+                  <>
+                    <BootHeading title={item.title || ""} />
+                    <BootText text={item.text || ""} className="text-secondary text-base sm:text-lg leading-relaxed max-w-xl" />
+                  </>
+                ) : (
+                  <>
+                    <h2 className="page-title text-primary">
+                      {item.title}
+                    </h2>
+                    <p className="text-secondary text-base sm:text-lg leading-relaxed max-w-xl">{item.text}</p>
+                  </>
+                )}
               </div>
             );
           })}
         </div>
 
         {length > 1 && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3" data-boot-controls={boot || undefined}>
             <div className="flex items-center gap-2.5">
               <button type="button" onClick={() => go(-1)} aria-label="Previous slide" className="btn-icon">
                 <ArrowLeft className="w-4 h-4" />

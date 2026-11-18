@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom'
 import { useReducedMotion } from 'framer-motion'
 import { GlowNode, RingNode, SoftPulse, TRACE_GOLD } from './CircuitParts'
 import { buildBoard, measurePage } from '../../lib/circuitLayout'
+import PowerOnLayer from './PowerOnLayer'
+import { powerOn } from '../../lib/powerOn'
 
 const modeFor = (w) => (w < 768 ? 'minimal' : w < 1024 ? 'medium' : 'full')
 const LINE = 1.4 // one stroke weight everywhere: slightly thicker for definition, still faint
@@ -73,8 +75,24 @@ export default function CircuitBoard() {
     let timer = 0
     const rebuild = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => setBoard(buildBoard(measurePage(root, wrap), modeFor(window.innerWidth))), 180)
+      timer = setTimeout(() => {
+        const next = buildBoard(measurePage(root, wrap), modeFor(window.innerWidth))
+        // The About "power on" section, in board coordinates (see PowerOnLayer)
+        const section = powerOn.getState().section
+        if (section) {
+          const o = wrap.getBoundingClientRect().top
+          const r = section.getBoundingClientRect()
+          next.powerZone = { top: r.top - o, bottom: r.bottom - o }
+        }
+        setBoard(next)
+      }, 180)
     }
+    // Re-measure when a power-on section registers or leaves
+    let lastSection = powerOn.getState().section
+    const unsubscribe = powerOn.subscribe(() => {
+      const { section } = powerOn.getState()
+      if (section !== lastSection) { lastSection = section; rebuild() }
+    })
     const ro = new ResizeObserver(rebuild)
     ro.observe(root)
     window.addEventListener('resize', rebuild)
@@ -85,6 +103,7 @@ export default function CircuitBoard() {
       clearTimeout(timer)
       clearTimeout(late)
       ro.disconnect()
+      unsubscribe()
       window.removeEventListener('resize', rebuild)
     }
   }, [pathname])
@@ -221,6 +240,9 @@ export default function CircuitBoard() {
               ))}
             </g>
           ))}
+
+          {/* About page "power on" pulses and lit nodes (only while lib/powerOn is active) */}
+          <PowerOnLayer board={board} />
         </svg>
       )}
     </div>

@@ -338,6 +338,25 @@ html { scroll-padding-top: 4.5rem; }
   .board-soft-glow, [data-inview] > .anchor-glow { animation: none; opacity: 0.55; }
 }
 
+/* ── About "power on" landing (pages/About + lib/powerOn) ── */
+/* Before and during the sequence the pieces start hidden; the text stays in the DOM (and in the
+   accessibility tree via the heading's sr-only copy). The driver's inline styles take over from here. */
+[data-boot="pending"] [data-boot-char],
+[data-boot="pending"] [data-boot-text] [data-w],
+[data-boot="pending"] [data-boot-media],
+[data-boot="pending"] [data-boot-controls] { opacity: 0; }
+.boot-cursor {
+  position: absolute;
+  top: 0.14em;
+  left: 0;
+  width: 0.48em;
+  height: 0.86em;
+  background: var(--color-accent);
+  box-shadow: 0 0 14px -2px rgba(254, 178, 58, 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── First-visit intro (components/IntroSplash.jsx) ── */
 /* The page, circuits and nav brand stay hidden under the intro, then fade in at handoff.
    --intro-speed is set by IntroSplash from its INTRO_SPEED constant so this stays in step with the overlay. */

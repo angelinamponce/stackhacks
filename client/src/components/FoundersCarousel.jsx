@@ -10,7 +10,7 @@ const EASE = [0.16, 1, 0.3, 1]
  * All founders visible at once: large portrait cards (wrapping four to a row and centred on desktop,
  * or split where `breakAfter` says; a scroll-snap row with the active card centred below lg). Selecting one spotlights them in the panel underneath.
  */
-export default function FoundersCarousel({ founders, breakAfter }) {
+export default function FoundersCarousel({ founders, breakAfter, onActiveChange }) {
   const [active, setActive] = useState(0)
   const [hovered, setHovered] = useState(null)
   const reduce = useReducedMotion()
@@ -19,6 +19,14 @@ export default function FoundersCarousel({ founders, breakAfter }) {
   const length = founders.length
 
   const go = (dir) => setActive((i) => (i + dir + length) % length)
+
+  // Tell the page when the featured founder changes (not on first render)
+  const lastActive = useRef(active)
+  useEffect(() => {
+    if (lastActive.current === active) return
+    lastActive.current = active
+    onActiveChange?.(active)
+  }, [active, onActiveChange])
 
   // Keep the selected card centred inside the mobile scroll row (horizontal only, so the page doesn't jump)
   useEffect(() => {

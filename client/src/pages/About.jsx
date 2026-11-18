@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { client } from '../sanityClient'
 import { CircularDisplay } from '../components/CircularDisplay'
 import FoundersCarousel from '../components/FoundersCarousel'
-import { CountUp, Reveal, Hairline, STAGGER } from '../components/Interactive'
+import AsciiBrain from '../components/AsciiBrain'
+import { Reveal, Hairline, STAGGER } from '../components/Interactive'
+import { COUNT, SESSION_KEY, clamp01, easeOut, now, powerOn, timeline } from '../lib/powerOn'
+import { useIntroDone } from '../lib/intro'
 import { spotlightHandlers } from '../lib/pointer'
 import { Bell, FileText, Calendar, Globe } from 'lucide-react'
 // A closer crop of her headshot, so her face fills the card like the others
@@ -70,6 +73,137 @@ const fallbackAbout = [
 
 // Events hosted to date, including ones never posted to Sanity; the live count can only raise it
 const EVENTS_HOSTED_MIN = 15
+
+/* ─────────────────────────── Our Story "power on" landing ─────────────────────────── */
+
+const MOBILE_QUERY = '(max-width: 767px)'
+
+// 'play' runs the landing sequence (first visit this session, or ?replay=1); 'final' shows the end
+// state with idle pulses only; 'reduced' (prefers-reduced-motion) shows the end state, nothing moves.
+function initialBootMode() {
+  if (typeof window === 'undefined') return 'final'
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 'reduced'
+  if (new URLSearchParams(window.location.search).get('replay') === '1') return 'play'
+  // Deep links to a later section skip the landing
+  if (window.location.hash && window.location.hash !== '#story') return 'final'
+  try { if (sessionStorage.getItem(SESSION_KEY)) return 'final' } catch { /* storage blocked */ }
+  return 'play'
+}
+
+/**
+ * Registers the Our Story section with lib/powerOn (circuit pulses + lit nodes on the page-level
+ * board) and, in 'play' mode, drives the heading typing, the paragraph rising in line by line and
+ * the carousel fading in, all on the shared pausable clock.
+ */
+function useStoryPowerOn(sectionRef, ready) {
+  const [mode] = useState(initialBootMode)
+  const [mobile] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(MOBILE_QUERY).matches)
+  const [done, setDone] = useState(mode !== 'play')
+  const introDone = useIntroDone()
+
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    powerOn.activate(el, mode, mobile)
+    return () => powerOn.deactivate(el)
+  }, [sectionRef, mode, mobile])
+
+  useEffect(() => {
+    if (done || !ready || !introDone) return
+    const el = sectionRef.current
+    const chars = [...el.querySelectorAll('[data-boot-char]')]
+    const cursor = el.querySelector('[data-boot-cursor]')
+    const words = [...el.querySelectorAll('[data-boot-text] [data-w]')]
+    const media = el.querySelector('[data-boot-media]')
+    const controls = el.querySelector('[data-boot-controls]')
+
+    // Group the paragraph's words into its rendered lines
+    const lines = []
+    let lineTop = null
+    words.forEach((w) => {
+      if (w.offsetTop !== lineTop) { lines.push([]); lineTop = w.offsetTop }
+      lines[lines.length - 1].push(w)
+    })
+
+    const T = timeline(mobile)
+    const typeEnd = T.typeAt + chars.length * T.charMs
+    const textAt = typeEnd + T.textGap
+    const mediaAt = typeEnd + T.mediaGap
+    const BLINK = 180
+    const cursorEnd = typeEnd + BLINK * 4 + 200
+    const end = Math.max(textAt + Math.max(0, lines.length - 1) * T.lineStagger + T.lineMs, mediaAt + 100 + T.mediaMs, cursorEnd)
+
+    const show = (els, p, dy = 0) => els.forEach((x) => {
+      x.style.opacity = String(p)
+      x.style.transform = dy && p < 1 ? `translateY(${((1 - p) * dy).toFixed(2)}px)` : ''
+    })
+    const finish = () => {
+      el.removeAttribute('data-boot') // before clearing inline styles, so nothing flashes hidden
+      ;[...chars, ...words, cursor, media, controls].forEach((x) => { if (x) { x.style.opacity = ''; x.style.transform = '' } })
+      setDone(true)
+    }
+
+    powerOn.start()
+    const startAt = powerOn.getState().startAt
+    let off = powerOn.onFrame((t) => {
+      const e = t - startAt
+      const shown = e < T.typeAt ? 0 : Math.min(chars.length, Math.floor((e - T.typeAt) / T.charMs) + 1)
+      chars.forEach((c, i) => { c.style.opacity = i < shown ? '1' : '0' })
+      if (cursor) {
+        const last = chars[shown - 1]
+        cursor.style.left = last ? `${last.offsetLeft + last.offsetWidth + 4}px` : '0px'
+        const p = e - typeEnd
+        // Solid while typing, then two blinks and a fade
+        cursor.style.opacity = String(
+          e < T.typeAt - 250 ? 0 : p < 0 ? 1 : p < BLINK * 4 ? Math.floor(p / BLINK) % 2 : clamp01(1 - (p - BLINK * 4) / 200)
+        )
+      }
+      lines.forEach((ws, k) => show(ws, easeOut(clamp01((e - textAt - k * T.lineStagger) / T.lineMs)), 14))
+      if (media) show([media], easeOut(clamp01((e - mediaAt) / T.mediaMs)))
+      if (controls) show([controls], easeOut(clamp01((e - mediaAt - 100) / T.mediaMs)), 8)
+      if (e >= end) { off?.(); off = null; finish() }
+    })
+    return () => off?.()
+  }, [sectionRef, ready, introDone, done, mobile])
+
+  return { mode, mobile, done }
+}
+
+/** Stat number that counts up from 0 once it scrolls into view (landing 'play' mode only). */
+function StatCount({ to, plus, index, animate, mobile }) {
+  const ref = useRef(null)
+  const [value, setValue] = useState(animate ? 0 : to)
+  const [finished, setFinished] = useState(!animate)
+
+  useEffect(() => {
+    if (!animate) return
+    const el = ref.current
+    let off = null
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      io.disconnect()
+      const dur = mobile ? COUNT.mobileMs : COUNT.ms
+      const start = now() + index * COUNT.stagger
+      off = powerOn.onFrame((t) => {
+        const p = clamp01((t - start) / dur)
+        setValue(Math.round(to * easeOut(p)))
+        if (p >= 1) { off?.(); off = null; setFinished(true) }
+      })
+    }, { threshold: 0.4 })
+    io.observe(el)
+    return () => { io.disconnect(); off?.() }
+  }, [animate, to, index, mobile])
+
+  return (
+    <>
+      <span className="sr-only">{to}{plus ? '+' : ''}</span>
+      <span ref={ref} aria-hidden="true" className="tabular-nums">
+        {value}
+        {plus && <span className={`text-accent transition-opacity duration-300 ${finished ? 'opacity-100' : 'opacity-0'}`}>+</span>}
+      </span>
+    </>
+  )
+}
 
 function SectionHeading({ title, children }) {
   return (
@@ -138,6 +272,10 @@ const About = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const storyRef = useRef(null)
+  const brainRef = useRef(null)
+  const pulseBrain = useCallback(() => brainRef.current?.pulse(), [])
+  const boot = useStoryPowerOn(storyRef, !loading)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -198,11 +336,17 @@ const About = () => {
         <SectionNav />
 
         {/* ── Our Story ── */}
-        <section id="story" className="screen-section space-y-14 sm:space-y-16">
+        <section
+          id="story"
+          ref={storyRef}
+          data-boot={boot.done ? undefined : 'pending'}
+          className="screen-section space-y-14 sm:space-y-16"
+        >
           {loading ? (
             <div className="h-[25rem] animate-pulse rounded-3xl bg-white/[0.02]" />
           ) : (
-            <CircularDisplay testimonials={about} autoplay={true} />
+            // Autoplay waits for the landing so the first slide is the one that boots up
+            <CircularDisplay testimonials={about} autoplay={boot.done} boot={boot.mode === 'play'} />
           )}
 
           {loadError && <LoadError what="the latest club stats and photos" />}
@@ -218,8 +362,7 @@ const About = () => {
                   {/* Label first in the markup (dt before dd); flex-col-reverse shows the number on top */}
                   <dt className="text-[0.95rem] leading-snug text-secondary sm:text-base">{stat.label}</dt>
                   <dd className="font-display-heading text-[3.25rem] leading-none text-primary sm:text-[3.75rem] lg:text-[4.5rem]">
-                    <CountUp to={stat.value} />
-                    {stat.plus && <span className="text-accent">+</span>}
+                    <StatCount to={stat.value} plus={stat.plus} index={i} animate={boot.mode === 'play'} mobile={boot.mobile} />
                   </dd>
                 </Reveal>
               ))}
@@ -228,14 +371,20 @@ const About = () => {
         </section>
 
         {/* ── Meet the Founders ── */}
-        <section id="founders" className="screen-section space-y-10">
-          <SectionHeading title="Meet the Founders" />
+        <section id="founders" className="screen-section relative space-y-10">
+          {/* ASCII head-with-brain in the empty top-right corner, behind the heading and cards.
+              Sized so the face stays clear of the top row of cards; hidden below lg, where there's no room. */}
+          <AsciiBrain ref={brainRef} className="absolute right-0 -top-6 z-0 hidden lg:block h-[180px] w-[150px] xl:h-[214px] xl:w-[176px]" />
+
+          <div className="relative z-10">
+            <SectionHeading title="Meet the Founders" />
+          </div>
 
           {loading ? (
             <div className="h-[30rem] animate-pulse rounded-3xl bg-white/[0.02]" />
           ) : founders.length > 0 ? (
-            <Reveal>
-              <FoundersCarousel founders={founders} breakAfter={3} />
+            <Reveal className="relative z-10">
+              <FoundersCarousel founders={founders} breakAfter={3} onActiveChange={pulseBrain} />
             </Reveal>
           ) : loadError ? (
             <LoadError what="the founders" />
