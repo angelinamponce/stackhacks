@@ -2,15 +2,16 @@ import { useEffect, useImperativeHandle, useRef } from "react"
 
 /*
  * ASCII-art side-profile head (facing left) with a brain inside, for the About page's
- * "Meet the Founders" corner. Decorative only (aria-hidden, pointer-events: none).
+ * "Meet the Founders" header. Decorative only (aria-hidden, pointer-events: none).
  *
  * The grid is rasterised from line-art geometry: cells on the head contour become dim
  * direction-aware strokes, cells inside the brain become bright folds (#, =), outline (*) and
  * texture (·).
  *
  * - First time in view: a fast left-to-right / top-to-bottom matrix decode into the final shape.
- * - Then: a soft "neural wave" of brighter glyphs ripples across the brain every few seconds,
- *   with a subtle flicker on random characters.
+ * - Then: a bright white-gold "synapse wave" crest sweeps diagonally across the brain every
+ *   ~2.5s (glyphs swap to denser characters, brighten and bloom more), the head outline breathes
+ *   in opacity, and a few random characters flicker.
  * - `ref.current.pulse()`: a ~400ms scramble-and-resolve in the brain (founder switched).
  * - Only animates while on screen and the tab is visible; reduced motion shows the final grid.
  */
@@ -37,13 +38,14 @@ const FOLDS = [
   ["F5", "F10", "B10"], ["B8", "C1", "C0", "B9"], ["B9", "T0", "T1"],
 ].map((path) => path.map((n) => N[n]))
 
-const OUTLINE_COLOR = "rgba(217,138,43,0.35)"
-const BRAIN_RGB = [229, 154, 56] // #E59A38
-const SHIMMER_RGB = [255, 226, 168]
+const OUTLINE_RGB = [245, 166, 35] // crisp warm gold; opacity breathes 0.55-0.85
+const BRAIN_RGB = [255, 184, 77] // #FFB84D
+const CREST_MID = [255, 209, 102] // #FFD166
+const CREST_TOP = [255, 243, 214] // #FFF3D6
 const SCRAMBLE = "·:-=+*#@"
 const FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 
-const rgb = ([r, g, b], a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a})`
+const rgb = ([r, g, b], a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`
 const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k)
 const brighter = { "·": "*", ":": "*", "*": "#", "=": "#", "#": "@", "@": "@" }
 
@@ -112,29 +114,35 @@ export default function AsciiBrain({ className = "", ref }) {
     const api = apiRef.current
     const ctx = canvas.getContext("2d")
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    // Brain glyphs are drawn to their own layer and composited with two blurred copies, the canvas
+    // equivalent of text-shadow: 0 0 8px rgba(255,184,77,.65), 0 0 18px rgba(245,158,11,.35)
+    const layer = document.createElement("canvas")
+    const lctx = layer.getContext("2d")
+    const FILTERS = "filter" in ctx
 
     let cells = []
     let brainCells = []
-    let cw = 0, ch = 0, fontPx = 9, W = 0, H = 0
-    let visible = false, raf = 0, timer = 0
+    let cw = 0, ch = 0, fontPx = 11, W = 0, H = 0, dpr = 1
+    let visible = false, raf = 0, timer = 0, lastDraw = 0
     let decodeAt = reduced ? -Infinity : null // null until first in view
     let wave = null // { at, dur, from, to }
     let scramble = null // { at, dur }
-    let flicker = new Map() // cell -> { g, until }
+    const flicker = new Map() // cell -> { g, until }
     let nextWave = 0, nextFlicker = 0
     let pausedAt = 0
-    const DECODE = 700, WAVE = 1300, PULSE = 400
+    const DECODE = 700, WAVE = 1150, WAVE_EVERY = 2500, PULSE = 400, BREATH = 4200
+    const IDLE_FPS_MS = 50 // between waves only the slow breathing moves: ~20fps is plenty
 
     const layout = () => {
       const r = canvas.getBoundingClientRect()
       W = r.width; H = r.height
       if (W < 20 || H < 20) return
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = Math.round(W * dpr)
-      canvas.height = Math.round(H * dpr)
+      dpr = Math.min(window.devicePixelRatio || 1, 2)
+      for (const c of [canvas, layer]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr) }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      // 8px font on smaller desktops, 9-10px on wide ones; cells follow monospace proportions
-      fontPx = W < 165 ? 8 : W < 200 ? 9 : 10
+      lctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      // ~31 columns across the box: 11-12px on desktop, compact (8px) when stacked on small screens
+      fontPx = Math.max(7, Math.min(12, Math.round(W / 31 / 0.6)))
       cw = fontPx * 0.6
       ch = fontPx * 0.98 // tight line height
       const cols = Math.floor(W / cw), rows = Math.floor(H / ch)
@@ -143,56 +151,99 @@ export default function AsciiBrain({ className = "", ref }) {
       const fitRows = Math.min(rows, Math.round((fitCols * cw * 110) / 86 / ch))
       cells = buildGrid(fitCols, fitRows)
       brainCells = cells.filter((c) => c.brain)
-      const ox = W - fitCols * cw // hug the right edge
-      cells.forEach((cell) => { cell.x = ox + (cell.c + 0.5) * cw; cell.y = (cell.r + 0.5) * ch })
+      const ox = (W - fitCols * cw) / 2, oy = (H - fitRows * ch) / 2
+      cells.forEach((cell) => { cell.x = ox + (cell.c + 0.5) * cw; cell.y = oy + (cell.r + 0.5) * ch })
       draw(performance.now())
     }
 
-    const brainBox = () => {
-      const xs = brainCells.map((c) => c.x)
-      return [Math.min(...xs), Math.max(...xs)]
+    // Diagonal coordinate (front-top of the brain -> back-bottom) used by the synapse wave
+    const diag = (cell) => cell.x + cell.y * 0.7
+    const brainRange = () => {
+      const ds = brainCells.map(diag)
+      return [Math.min(...ds), Math.max(...ds)]
     }
 
     const draw = (now) => {
       ctx.clearRect(0, 0, W, H)
+      lctx.clearRect(0, 0, W, H)
       if (decodeAt == null) return
-      ctx.font = `500 ${fontPx}px ${FONT}`
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
+      lastDraw = now
+      const font = `600 ${fontPx}px ${FONT}`
+      for (const c of [ctx, lctx]) { c.font = font; c.textAlign = "center"; c.textBaseline = "middle" }
       const d = (now - decodeAt) / DECODE
       const w = wave ? (now - wave.at) / wave.dur : null
       const s = scramble ? (now - scramble.at) / scramble.dur : null
       const seed = Math.floor(now / 45)
+      const breath = reduced ? 0.75 : 0.55 + 0.3 * (0.5 + 0.5 * Math.sin((now / BREATH) * Math.PI * 2))
+      const crestPos = w != null ? wave.from + (wave.to - wave.from) * w : null
+      const crestW = Math.max(18, cw * 4)
+      const hot = [] // crest glyphs get an extra, wider bloom
 
       for (const cell of cells) {
         let g = cell.g, a = 1, k = 0
         // Matrix decode: each cell locks in after a left-to-right / top-to-bottom delay
         const lockAt = (cell.c / 40) * 0.55 + (cell.r / 30) * 0.25 + cell.rand * 0.2
-        if (d < lockAt) { g = SCRAMBLE[(cell.c * 7 + cell.r * 13 + seed) % SCRAMBLE.length]; a = 0.45 }
+        const decoding = d < lockAt
+        if (decoding) { g = SCRAMBLE[(cell.c * 7 + cell.r * 13 + seed) % SCRAMBLE.length]; a = 0.5 }
         else if (cell.brain) {
-          if (s != null && s < cell.rand * 0.85) { g = SCRAMBLE[(cell.c * 5 + cell.r * 3 + seed) % SCRAMBLE.length]; k = 0.5 }
-          if (w != null) {
-            // Neural wave: a soft band sweeping across the brain
-            const pos = wave.from + (wave.to - wave.from) * w
-            const band = Math.max(0, 1 - Math.abs(cell.x - pos) / 26) * Math.sin(Math.PI * Math.min(1, w))
-            if (band > 0.35) g = brighter[g] || g
-            k = Math.max(k, band * 0.8)
+          if (s != null && s < cell.rand * 0.85) { g = SCRAMBLE[(cell.c * 5 + cell.r * 3 + seed) % SCRAMBLE.length]; k = 0.55 }
+          if (crestPos != null) {
+            const band = Math.max(0, 1 - Math.abs(diag(cell) - crestPos) / crestW)
+            if (band > 0) {
+              k = Math.max(k, band)
+              // Characters swap as the crest passes: denser at the front, scrambling right on top
+              g = band > 0.8 ? (cell.rand > 0.5 ? "@" : "#") : band > 0.45 ? (brighter[g] || g) : g
+            }
           }
           const f = flicker.get(cell)
-          if (f) { g = f.g; k = Math.max(k, 0.4) }
+          if (f) { g = f.g; k = Math.max(k, 0.45) }
         }
-        if (cell.brain) {
+
+        if (cell.brain && !decoding) {
           const dim = cell.g === "·" || cell.g === ":"
-          ctx.fillStyle = rgb(mix(BRAIN_RGB, SHIMMER_RGB, k), a * (dim && k < 0.3 ? 0.6 : 1))
-          ctx.shadowColor = rgb(BRAIN_RGB, 0.55 + k * 0.35)
-          ctx.shadowBlur = 4 + k * 4
+          const col = k > 0.5 ? mix(CREST_MID, CREST_TOP, (k - 0.5) * 2) : mix(BRAIN_RGB, CREST_MID, k * 2)
+          lctx.fillStyle = rgb(col, dim && k < 0.3 ? 0.62 : 1)
+          lctx.fillText(g, cell.x, cell.y)
+          if (k > 0.35) hot.push([g, cell.x, cell.y, k, col])
+        } else if (cell.brain) {
+          lctx.fillStyle = rgb(BRAIN_RGB, a)
+          lctx.fillText(g, cell.x, cell.y)
         } else {
-          ctx.fillStyle = a < 1 ? `rgba(217,138,43,${0.35 * a})` : OUTLINE_COLOR
-          ctx.shadowBlur = 0
+          ctx.fillStyle = rgb(OUTLINE_RGB, decoding ? 0.4 * a : breath)
+          ctx.fillText(g, cell.x, cell.y)
         }
-        ctx.fillText(g, cell.x, cell.y)
       }
-      ctx.shadowBlur = 0
+
+      // Composite the brain: wide soft bloom, tight bloom, then the crisp glyphs on top
+      ctx.save()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      if (FILTERS) {
+        ctx.filter = `blur(${9 * dpr}px)`
+        ctx.globalAlpha = 0.45
+        ctx.drawImage(layer, 0, 0)
+        ctx.filter = `blur(${4 * dpr}px)`
+        ctx.globalAlpha = 0.85
+        ctx.drawImage(layer, 0, 0)
+        ctx.filter = "none"
+        ctx.globalAlpha = 1
+      } else {
+        ctx.shadowColor = "rgba(255,184,77,0.65)"
+        ctx.shadowBlur = 8 * dpr
+      }
+      ctx.drawImage(layer, 0, 0)
+      ctx.restore()
+
+      // Crest glyphs: an extra white-gold bloom so the wave reads at a glance
+      if (hot.length) {
+        ctx.save()
+        for (const [g, x, y, k, col] of hot) {
+          ctx.shadowColor = rgb(CREST_MID, 0.9)
+          ctx.shadowBlur = 6 + k * 10
+          ctx.fillStyle = rgb(col, 0.5 + k * 0.5)
+          ctx.fillText(g, x, y)
+        }
+        ctx.restore()
+      }
     }
 
     const step = (now) => {
@@ -203,10 +254,9 @@ export default function AsciiBrain({ className = "", ref }) {
         if (wave && now - wave.at > wave.dur) wave = null
         if (scramble && now - scramble.at > scramble.dur) scramble = null
         if (!wave && now >= nextWave && brainCells.length) {
-          const [x0, x1] = brainBox()
-          const ltr = Math.random() < 0.6 // mostly front-to-back
-          wave = { at: now, dur: WAVE, from: ltr ? x0 - 30 : x1 + 30, to: ltr ? x1 + 30 : x0 - 30 }
-          nextWave = now + WAVE + 2500 + Math.random() * 2500
+          const [d0, d1] = brainRange()
+          wave = { at: now, dur: WAVE, from: d0 - 30, to: d1 + 30 }
+          nextWave = now + WAVE_EVERY
         }
         for (const [cell, f] of flicker) if (f.until < now) flicker.delete(cell)
         if (now >= nextFlicker && brainCells.length) {
@@ -214,16 +264,17 @@ export default function AsciiBrain({ className = "", ref }) {
             const cell = brainCells[Math.floor(Math.random() * brainCells.length)]
             flicker.set(cell, { g: brighter[cell.g] || cell.g, until: now + 90 })
           }
-          nextFlicker = now + 900 + Math.random() * 1400
+          nextFlicker = now + 700 + Math.random() * 1100
         }
       }
-      draw(now)
-      // Full frame rate while something moves; otherwise sleep until the next flicker or wave
-      if (decoding || wave || scramble || flicker.size) raf = requestAnimationFrame(step)
-      else timer = setTimeout(() => { timer = 0; wake() }, Math.max(16, Math.min(nextWave, nextFlicker) - performance.now()))
+      // Full frame rate while the wave, decode or scramble moves; ~20fps for the slow breathing
+      const busy = decoding || wave || scramble || flicker.size
+      if (busy || now - lastDraw >= IDLE_FPS_MS) draw(now)
+      raf = requestAnimationFrame(step)
     }
     const wake = () => {
-      if (raf || timer) return
+      if (raf) return
+      clearTimeout(timer); timer = 0
       raf = requestAnimationFrame(step)
     }
     const sleep = () => {
@@ -234,7 +285,6 @@ export default function AsciiBrain({ className = "", ref }) {
     api.pulse = () => {
       if (reduced || decodeAt == null) return
       scramble = { at: performance.now(), dur: PULSE }
-      clearTimeout(timer); timer = 0
       wake()
     }
 
@@ -242,8 +292,8 @@ export default function AsciiBrain({ className = "", ref }) {
       visible = entry.isIntersecting
       if (visible && decodeAt == null) {
         decodeAt = performance.now()
-        nextWave = decodeAt + DECODE + 1200
-        nextFlicker = decodeAt + DECODE + 600
+        nextWave = decodeAt + DECODE + 600
+        nextFlicker = decodeAt + DECODE + 400
       }
       if (visible) { if (reduced) draw(performance.now()); else wake() }
       else sleep()
@@ -262,7 +312,7 @@ export default function AsciiBrain({ className = "", ref }) {
 
     const ro = new ResizeObserver(layout)
     ro.observe(canvas)
-    document.fonts?.load?.(`500 9px 'JetBrains Mono'`).then(layout, () => {})
+    document.fonts?.load?.(`600 11px 'JetBrains Mono'`).then(layout, () => {})
     layout()
 
     return () => {
@@ -274,5 +324,11 @@ export default function AsciiBrain({ className = "", ref }) {
     }
   }, [])
 
-  return <canvas ref={canvasRef} aria-hidden="true" className={`pointer-events-none ${className}`} />
+  return (
+    <div aria-hidden="true" className={`pointer-events-none ${className}`}>
+      {/* Soft gold backlight so the block lifts off the dark background */}
+      <div className="absolute inset-[-12%] bg-[radial-gradient(closest-side_at_56%_38%,rgba(245,166,35,0.12),transparent)]" />
+      <canvas ref={canvasRef} className="relative block h-full w-full" />
+    </div>
+  )
 }
