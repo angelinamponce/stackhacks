@@ -1,105 +1,176 @@
 import { useEffect, useImperativeHandle, useRef } from "react"
 
 /*
- * ASCII-art side-profile head (facing left) with a brain inside, for the About page's
- * "Meet the Founders" header. Decorative only (aria-hidden, pointer-events: none).
+ * ASCII icon of a side-profile head (facing left) with a brain inside, centred above the
+ * About page's "Meet the Founders" heading. Decorative: aria-hidden.
  *
- * The grid is rasterised from line-art geometry: cells on the head contour become dim
- * direction-aware strokes, cells inside the brain become bright folds (#, =), outline (*) and
- * texture (·).
+ * Built like the Projects page ASCII (lib/asciiArt): a clean source drawing is rendered on an
+ * offscreen canvas and sampled per character cell. Two layers are sampled separately:
+ *   - the head outline: the smoothed contour traced into a continuous one-cell-wide chain of
+ *     light characters (- on horizontal runs, : elsewhere), dim gold
+ *   - the brain (filled lobes with the fold lines carved out, brainstem, cerebellum)
+ *     -> sampled by coverage into a few clean levels, so lobes read as @ # and the folds as
+ *     lighter channels (+ : .), bright gold
  *
- * - First time in view: a fast left-to-right / top-to-bottom matrix decode into the final shape.
- * - Then: a bright white-gold "synapse wave" crest sweeps diagonally across the brain every
- *   ~2.5s (glyphs swap to denser characters, brighten and bloom more), the head outline breathes
- *   in opacity, and a few random characters flicker.
- * - `ref.current.pulse()`: a ~400ms scramble-and-resolve in the brain (founder switched).
- * - Only animates while on screen and the tab is visible; reduced motion shows the final grid.
+ * Intro (first time in view): the outline resolves along the edge (~500ms), then the brain lights
+ * up from the brainstem upward like neurons firing (~800ms). Idle: a ripple of brightness crosses
+ * the folds every 4-6s; hovering triggers one immediately (as does `ref.current.pulse()`).
+ * Mobile: intro only. Reduced motion: static final state. Paused off screen / tab hidden.
  */
 
-// Geometry in an 86 x 110 unit box
-const SILHOUETTE = [
-  [64, 110], [65, 93], [71, 84], [80, 72], [85, 56], [85, 40], [80, 25], [70, 13], [56, 6], [42, 5],
-  [29, 9], [19, 17], [13, 27], [11, 37], [9, 45], [2, 55], [8, 59], [6, 64], [9, 67], [7, 71],
-  [11, 75], [9, 81], [16, 86], [30, 88], [34, 98], [35, 110],
+const SCRAMBLE = "!<>-_\\/[]{}=+*^?#%@$&01"
+const FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+const OUTLINE = "rgba(245,166,35,0.42)"
+const BRAIN = [254, 178, 58] // site accent gold
+const FLASH = [255, 243, 214] // #FFF3D6
+const GLOW = "rgba(254,178,58,0.25)"
+
+// Source drawing in units (box x -1..87, y 2..102)
+const UX0 = -7, UY0 = 2, UW = 94, UH = 95
+const HEAD = [
+  [65, 95], [66, 90], [71, 84], [80, 72], [85, 56], [85, 40], [80, 25], [70, 13], [56, 6], [42, 5],
+  // Forehead, a pronounced nose (tip repeated to keep it pointed), lips and chin: exaggerated a
+  // little so the profile still reads at ~35 character columns
+  [29, 9], [19, 17], [13, 27], [11, 36], [9, 44], [3, 51], [-5, 59], [-5, 59], [6, 62], [2, 66],
+  [8, 69], [3, 73], [9, 77], [5, 83], [14, 88], [30, 88], [33, 95],
 ]
-const BRAIN = [
+const BRAIN_SHAPE = [
   [26, 40], [23, 29], [28, 18], [39, 11], [53, 10], [66, 15], [75, 25], [78, 38], [73, 50], [62, 55],
   [50, 52], [38, 50], [29, 47],
 ]
-const N = {
-  F0: [35, 22], F1: [46, 19], F2: [56, 22], F3: [65, 24], F4: [70, 34], F5: [61, 38], F6: [51, 33],
-  F7: [41, 30], F8: [33, 38], F9: [44, 41], F10: [55, 45], F11: [67, 46], F12: [49, 26],
-  C0: [64, 60], C1: [72, 57], T0: [57, 64], T1: [59, 76],
-}
-BRAIN.forEach((p, i) => { N[`B${i}`] = p })
+// Fold (sulcus) curves carved out of the brain
 const FOLDS = [
-  ["B2", "F0", "F7", "F8", "B0"], ["B3", "F1", "F12", "F6", "F9", "B11"], ["B5", "F3", "F2", "F12"],
-  ["B6", "F4", "F5", "F6", "F7"], ["B7", "F11", "F10", "F9", "F8"], ["F0", "F1", "F2"], ["F3", "F4", "F11"],
-  ["F5", "F10", "B10"], ["B8", "C1", "C0", "B9"], ["B9", "T0", "T1"],
-].map((path) => path.map((n) => N[n]))
+  [[30, 18], [35, 23], [40, 30], [33, 38], [27, 41]],
+  [[40, 11], [46, 19], [48, 27], [52, 33], [45, 41], [39, 49]],
+  [[60, 13], [57, 22], [64, 25], [70, 33], [61, 38], [52, 34]],
+  [[76, 31], [68, 45], [57, 46], [50, 51]],
+]
+const STEM = [[57, 52], [58, 58], [59, 65]]
+const CEREBELLUM = { x: 67, y: 58, rx: 7.5, ry: 4.5 }
 
-const OUTLINE_RGB = [245, 166, 35] // crisp warm gold; opacity breathes 0.55-0.85
-const BRAIN_RGB = [255, 184, 77] // #FFB84D
-const CREST_MID = [255, 209, 102] // #FFD166
-const CREST_TOP = [255, 243, 214] // #FFF3D6
-const SCRAMBLE = "·:-=+*#@"
-const FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
-
-const rgb = ([r, g, b], a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`
+const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v)
 const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k)
-const brighter = { "·": "*", ":": "*", "*": "#", "=": "#", "#": "@", "@": "@" }
+const rgb = ([r, g, b], a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`
+const LEVELS = ".:+#@"
+const bump = (g, n = 1) => LEVELS[Math.min(LEVELS.length - 1, LEVELS.indexOf(g) + n)] || g
 
-// Distance from p to segment ab, measured in cell units (so the threshold is ~half a cell)
-function segDist(px, py, [ax, ay], [bx, by], sx, sy) {
-  const dx = (bx - ax) / sx, dy = (by - ay) / sy
-  const qx = (px - ax) / sx, qy = (py - ay) / sy
-  const t = Math.max(0, Math.min(1, (qx * dx + qy * dy) / (dx * dx + dy * dy || 1)))
-  return Math.hypot(qx - t * dx, qy - t * dy)
-}
-function nearest(px, py, polyline, sx, sy, closed = false) {
-  let best = Infinity, dir = 0
-  const n = closed ? polyline.length : polyline.length - 1
-  for (let i = 0; i < n; i++) {
-    const a = polyline[i], b = polyline[(i + 1) % polyline.length]
-    const d = segDist(px, py, a, b, sx, sy)
-    if (d < best) { best = d; dir = Math.atan2((b[1] - a[1]) / sy, (b[0] - a[0]) / sx) }
+// Smooth curve through points (Catmull-Rom -> cubic Béziers)
+function smoothPath(ctx, pts, closed = false) {
+  const n = pts.length
+  const at = (i) => (closed ? pts[(i + n) % n] : pts[clamp(i, 0, n - 1)])
+  ctx.moveTo(...pts[0])
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2)
+    ctx.bezierCurveTo(
+      p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
+      p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6,
+      p2[0], p2[1]
+    )
   }
-  return [best, dir]
-}
-function inside(px, py, poly) {
-  let hit = false
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i], [xj, yj] = poly[j]
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit
-  }
-  return hit
-}
-// Contour glyph for a stroke direction (radians)
-function strokeGlyph(a) {
-  const d = ((((a * 180) / Math.PI) % 180) + 180) % 180
-  // Canvas y points down, so a 45° segment runs down-right ("\\") and 135° runs down-left ("/")
-  return d < 25 || d > 155 ? "-" : d > 65 && d < 115 ? ":" : d <= 65 ? "\\" : "/"
+  if (closed) ctx.closePath()
 }
 
-/** Rasterises the head into a cols x rows grid of { g, brain, x, y }. */
+/** Samples the two source layers into a cols x rows grid of character cells. */
 function buildGrid(cols, rows) {
-  const sx = 86 / cols, sy = 110 / rows // units per cell
-  const cells = []
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = (c + 0.5) * sx, y = (r + 0.5) * sy
-      const [dFold, fDir] = FOLDS.reduce((best, f) => { const v = nearest(x, y, f, sx, sy); return v[0] < best[0] ? v : best }, [Infinity, 0])
-      const [dBrain] = nearest(x, y, BRAIN, sx, sy, true)
-      const [dSil, sDir] = nearest(x, y, SILHOUETTE, sx, sy)
-      const inBrain = inside(x, y, BRAIN)
-      let g = null, brain = false
-      if (dFold < 0.5) { g = strokeGlyph(fDir) === "-" ? "=" : "#"; brain = true }
-      else if (dBrain < 0.5) { g = "*"; brain = true }
-      else if (inBrain) { g = (r + c) % 2 ? "·" : ":"; brain = true }
-      else if (dSil < 0.62) g = strokeGlyph(sDir)
-      if (g) cells.push({ c, r, g, brain, rand: Math.random() })
+  const SUB = 6
+  const W = cols * SUB, H = rows * SUB
+  // Units -> source pixels. One cell is SUB px in both directions, so stroke widths given in
+  // cells come out even-weight in the character grid even though cells are taller than wide.
+  const P = ([x, y]) => [((x - UX0) / UW) * W, ((y - UY0) / UH) * H]
+  const sample = (paint) => {
+    const c = document.createElement("canvas")
+    c.width = W; c.height = H
+    const g = c.getContext("2d", { willReadFrequently: true })
+    paint(g)
+    const px = g.getImageData(0, 0, W, H).data
+    const out = new Float32Array(cols * rows)
+    for (let r = 0; r < rows; r++)
+      for (let q = 0; q < cols; q++) {
+        let s = 0
+        for (let y = 0; y < SUB; y++)
+          for (let x = 0; x < SUB; x++) s += px[((r * SUB + y) * W + q * SUB + x) * 4 + 3]
+        out[r * cols + q] = s / (SUB * SUB * 255)
+      }
+    return out
+  }
+
+  const brain = sample((g) => {
+    g.fillStyle = "#000"
+    g.beginPath(); smoothPath(g, BRAIN_SHAPE.map(P), true); g.fill()
+    const [cx, cy] = P([CEREBELLUM.x, CEREBELLUM.y])
+    g.beginPath()
+    g.ellipse(cx, cy, (CEREBELLUM.rx / UW) * W, (CEREBELLUM.ry / UH) * H, 0, 0, Math.PI * 2)
+    g.fill()
+    g.lineCap = g.lineJoin = "round"
+    g.lineWidth = SUB * 1.1
+    g.strokeStyle = "#000"
+    g.beginPath(); smoothPath(g, STEM.map(P)); g.stroke()
+    // Carve the folds out of the lobes
+    g.globalCompositeOperation = "destination-out"
+    g.lineWidth = SUB * 0.85
+    FOLDS.forEach((f) => { g.beginPath(); smoothPath(g, f.map(P)); g.stroke() })
+    g.lineWidth = SUB * 0.5
+    g.beginPath(); g.moveTo(cx - (CEREBELLUM.rx / UW) * W * 0.8, cy); g.lineTo(cx + (CEREBELLUM.rx / UW) * W * 0.8, cy); g.stroke()
+  })
+
+  // Head outline: walk the smoothed contour in cell coordinates and keep each cell it crosses,
+  // giving a continuous chain one cell wide (staircase corners removed so the weight stays even)
+  const headPts = HEAD.map(P).map(([x, y]) => [x / SUB, y / SUB])
+  const n = headPts.length
+  const at = (i) => headPts[clamp(i, 0, n - 1)]
+  const chain = [] // { q, r, dx, dy }
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2)
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]
+    for (let t = 0; t <= 1; t += 0.02) {
+      const u = 1 - t
+      const x = u * u * u * p1[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * p2[0]
+      const y = u * u * u * p1[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * p2[1]
+      const dx = 3 * u * u * (c1[0] - p1[0]) + 6 * u * t * (c2[0] - c1[0]) + 3 * t * t * (p2[0] - c2[0])
+      const dy = 3 * u * u * (c1[1] - p1[1]) + 6 * u * t * (c2[1] - c1[1]) + 3 * t * t * (p2[1] - c2[1])
+      const q = clamp(Math.floor(x), 0, cols - 1), r = clamp(Math.floor(y), 0, rows - 1)
+      const last = chain[chain.length - 1]
+      if (!last || last.q !== q || last.r !== r) chain.push({ q, r, dx, dy })
     }
   }
+  // Drop staircase corners (a cell whose neighbours on either side meet diagonally), one at a
+  // time, so the line stays one cell wide without gaps. Spikes like the nose tip are kept.
+  const thin = []
+  for (const c of chain) {
+    const pp = thin[thin.length - 2]
+    if (pp && Math.abs(pp.q - c.q) === 1 && Math.abs(pp.r - c.r) === 1) thin.pop()
+    thin.push(c)
+  }
+  const seen = new Set()
+  const outline = []
+  thin.forEach((c, i) => {
+    const key = c.r * cols + c.q
+    if (seen.has(key)) return
+    seen.add(key)
+    // Slope in screen space (cells are 1.85x taller than wide)
+    const horizontal = Math.abs(c.dy * 1.85) < Math.abs(c.dx) * 0.6
+    outline.push({ q: c.q, r: c.r, g: horizontal ? "-" : ":", t: i / Math.max(1, thin.length - 1) })
+  })
+
+  const [stemX, stemY] = P(STEM[STEM.length - 1]).map((v) => v / SUB)
+
+  const cells = []
+  let maxD = 0
+  for (let r = 0; r < rows; r++)
+    for (let q = 0; q < cols; q++) {
+      const b = brain[r * cols + q]
+      if (b < 0.12) continue
+      // A few clean levels: solid lobes, lighter fold channels and edges
+      const g = b > 0.86 ? "@" : b > 0.66 ? "#" : b > 0.46 ? "+" : b > 0.28 ? ":" : "."
+      // Distance from the brainstem (in cells, rows weighted by their taller height)
+      const d = Math.hypot(q + 0.5 - stemX, (r + 0.5 - stemY) * 1.85)
+      maxD = Math.max(maxD, d)
+      cells.push({ q, r, g, brain: true, d, rand: Math.random() })
+    }
+  const taken = new Set(cells.map((c) => c.r * cols + c.q))
+  outline.forEach((c) => { if (!taken.has(c.r * cols + c.q)) cells.push({ ...c, brain: false, rand: Math.random() }) })
+  cells.forEach((c) => { if (c.brain) c.d /= maxD || 1 })
   return cells
 }
 
@@ -114,221 +185,148 @@ export default function AsciiBrain({ className = "", ref }) {
     const api = apiRef.current
     const ctx = canvas.getContext("2d")
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-    // Brain glyphs are drawn to their own layer and composited with two blurred copies, the canvas
-    // equivalent of text-shadow: 0 0 8px rgba(255,184,77,.65), 0 0 18px rgba(245,158,11,.35)
-    const layer = document.createElement("canvas")
-    const lctx = layer.getContext("2d")
-    const FILTERS = "filter" in ctx
+    const mobileMq = window.matchMedia?.("(max-width: 767px)")
 
-    let cells = []
-    let brainCells = []
-    let cw = 0, ch = 0, fontPx = 11, W = 0, H = 0, dpr = 1
-    let visible = false, raf = 0, timer = 0, lastDraw = 0
-    let decodeAt = reduced ? -Infinity : null // null until first in view
-    let wave = null // { at, dur, from, to }
-    let scramble = null // { at, dur }
-    const flicker = new Map() // cell -> { g, until }
-    let nextWave = 0, nextFlicker = 0
+    let cells = [], brainCells = []
+    let W = 0, H = 0, cw = 0, ch = 0, fontPx = 9, bx0 = 0, bx1 = 1
+    let visible = false, raf = 0, timer = 0
+    let introAt = reduced ? -Infinity : null // null until first in view
+    let ripple = null // { at }
+    let nextRipple = Infinity
     let pausedAt = 0
-    const DECODE = 700, WAVE = 1150, WAVE_EVERY = 2500, PULSE = 400, BREATH = 4200
-    const IDLE_FPS_MS = 50 // between waves only the slow breathing moves: ~20fps is plenty
+    const HEAD_MS = 500, BRAIN_AT = 420, BRAIN_MS = 800, FLASH_MS = 260, RIPPLE_MS = 750
+    const INTRO_END = BRAIN_AT + BRAIN_MS + FLASH_MS
+    const idleOn = () => !reduced && !mobileMq?.matches
+    const scheduleRipple = (now) => { nextRipple = idleOn() ? now + 4000 + Math.random() * 2000 : Infinity }
 
     const layout = () => {
-      const r = canvas.getBoundingClientRect()
-      W = r.width; H = r.height
+      const rect = canvas.getBoundingClientRect()
+      W = rect.width; H = rect.height
       if (W < 20 || H < 20) return
-      dpr = Math.min(window.devicePixelRatio || 1, 2)
-      for (const c of [canvas, layer]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr) }
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      canvas.width = Math.round(W * dpr)
+      canvas.height = Math.round(H * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      lctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      // ~31 columns across the box: 11-12px on desktop, compact (8px) when stacked on small screens
-      fontPx = Math.max(7, Math.min(12, Math.round(W / 31 / 0.6)))
-      cw = fontPx * 0.6
-      ch = fontPx * 0.98 // tight line height
-      const cols = Math.floor(W / cw), rows = Math.floor(H / ch)
-      // Keep the 86:110 head proportions inside the available grid
-      const fitCols = Math.min(cols, Math.round((rows * ch * 86) / 110 / cw))
-      const fitRows = Math.min(rows, Math.round((fitCols * cw * 110) / 86 / ch))
-      cells = buildGrid(fitCols, fitRows)
+      // Same cell proportions and weight as the Projects ASCII (rows 1.85x the column width)
+      const cellW = H < 150 ? 3.7 : 4.6
+      const cols = Math.max(12, Math.round(Math.min(W, (H * UW) / UH) / cellW))
+      const rows = Math.max(8, Math.round((cols * cellW * (UH / UW)) / (cellW * 1.85)))
+      cw = Math.min(W / cols, H / (rows * 1.85))
+      ch = cw * 1.85
+      fontPx = Math.min(ch, cw / 0.6) * 1.12
+      cells = buildGrid(cols, rows)
       brainCells = cells.filter((c) => c.brain)
-      const ox = (W - fitCols * cw) / 2, oy = (H - fitRows * ch) / 2
-      cells.forEach((cell) => { cell.x = ox + (cell.c + 0.5) * cw; cell.y = oy + (cell.r + 0.5) * ch })
+      const ox = (W - cols * cw) / 2, oy = (H - rows * ch) / 2
+      cells.forEach((c) => { c.x = ox + (c.q + 0.5) * cw; c.y = oy + (c.r + 0.5) * ch })
+      const xs = brainCells.map((c) => c.x)
+      bx0 = Math.min(...xs); bx1 = Math.max(...xs)
       draw(performance.now())
-    }
-
-    // Diagonal coordinate (front-top of the brain -> back-bottom) used by the synapse wave
-    const diag = (cell) => cell.x + cell.y * 0.7
-    const brainRange = () => {
-      const ds = brainCells.map(diag)
-      return [Math.min(...ds), Math.max(...ds)]
     }
 
     const draw = (now) => {
       ctx.clearRect(0, 0, W, H)
-      lctx.clearRect(0, 0, W, H)
-      if (decodeAt == null) return
-      lastDraw = now
-      const font = `600 ${fontPx}px ${FONT}`
-      for (const c of [ctx, lctx]) { c.font = font; c.textAlign = "center"; c.textBaseline = "middle" }
-      const d = (now - decodeAt) / DECODE
-      const w = wave ? (now - wave.at) / wave.dur : null
-      const s = scramble ? (now - scramble.at) / scramble.dur : null
-      const seed = Math.floor(now / 45)
-      const breath = reduced ? 0.75 : 0.55 + 0.3 * (0.5 + 0.5 * Math.sin((now / BREATH) * Math.PI * 2))
-      const crestPos = w != null ? wave.from + (wave.to - wave.from) * w : null
-      const crestW = Math.max(18, cw * 4)
-      const hot = [] // crest glyphs get an extra, wider bloom
+      if (introAt == null) return
+      ctx.font = `700 ${fontPx}px ${FONT}`
+      ctx.textAlign = "center"
+      ctx.textBaseline = "middle"
+      const e = now - introAt
+      const seed = Math.floor(now / 55)
 
-      for (const cell of cells) {
-        let g = cell.g, a = 1, k = 0
-        // Matrix decode: each cell locks in after a left-to-right / top-to-bottom delay
-        const lockAt = (cell.c / 40) * 0.55 + (cell.r / 30) * 0.25 + cell.rand * 0.2
-        const decoding = d < lockAt
-        if (decoding) { g = SCRAMBLE[(cell.c * 7 + cell.r * 13 + seed) % SCRAMBLE.length]; a = 0.5 }
-        else if (cell.brain) {
-          if (s != null && s < cell.rand * 0.85) { g = SCRAMBLE[(cell.c * 5 + cell.r * 3 + seed) % SCRAMBLE.length]; k = 0.55 }
-          if (crestPos != null) {
-            const band = Math.max(0, 1 - Math.abs(diag(cell) - crestPos) / crestW)
-            if (band > 0) {
-              k = Math.max(k, band)
-              // Characters swap as the crest passes: denser at the front, scrambling right on top
-              g = band > 0.8 ? (cell.rand > 0.5 ? "@" : "#") : band > 0.45 ? (brighter[g] || g) : g
-            }
-          }
-          const f = flicker.get(cell)
-          if (f) { g = f.g; k = Math.max(k, 0.45) }
-        }
-
-        if (cell.brain && !decoding) {
-          const dim = cell.g === "·" || cell.g === ":"
-          const col = k > 0.5 ? mix(CREST_MID, CREST_TOP, (k - 0.5) * 2) : mix(BRAIN_RGB, CREST_MID, k * 2)
-          lctx.fillStyle = rgb(col, dim && k < 0.3 ? 0.62 : 1)
-          lctx.fillText(g, cell.x, cell.y)
-          if (k > 0.35) hot.push([g, cell.x, cell.y, k, col])
-        } else if (cell.brain) {
-          lctx.fillStyle = rgb(BRAIN_RGB, a)
-          lctx.fillText(g, cell.x, cell.y)
-        } else {
-          ctx.fillStyle = rgb(OUTLINE_RGB, decoding ? 0.4 * a : breath)
-          ctx.fillText(g, cell.x, cell.y)
-        }
+      // Head outline: resolves along the contour
+      ctx.shadowBlur = 0
+      ctx.fillStyle = OUTLINE
+      for (const c of cells) {
+        if (c.brain) continue
+        const at = c.t * HEAD_MS
+        if (e < at) continue
+        const g = e - at < 70 ? SCRAMBLE[(c.q * 7 + c.r * 13 + seed) % SCRAMBLE.length] : c.g
+        ctx.fillText(g, c.x, c.y)
       }
 
-      // Composite the brain: wide soft bloom, tight bloom, then the crisp glyphs on top
-      ctx.save()
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-      if (FILTERS) {
-        ctx.filter = `blur(${9 * dpr}px)`
-        ctx.globalAlpha = 0.45
-        ctx.drawImage(layer, 0, 0)
-        ctx.filter = `blur(${4 * dpr}px)`
-        ctx.globalAlpha = 0.85
-        ctx.drawImage(layer, 0, 0)
-        ctx.filter = "none"
-        ctx.globalAlpha = 1
-      } else {
-        ctx.shadowColor = "rgba(255,184,77,0.65)"
-        ctx.shadowBlur = 8 * dpr
-      }
-      ctx.drawImage(layer, 0, 0)
-      ctx.restore()
-
-      // Crest glyphs: an extra white-gold bloom so the wave reads at a glance
-      if (hot.length) {
-        ctx.save()
-        for (const [g, x, y, k, col] of hot) {
-          ctx.shadowColor = rgb(CREST_MID, 0.9)
-          ctx.shadowBlur = 6 + k * 10
-          ctx.fillStyle = rgb(col, 0.5 + k * 0.5)
-          ctx.fillText(g, x, y)
+      // Brain: neurons fire from the brainstem upward, then the idle ripple
+      ctx.shadowColor = GLOW
+      ctx.shadowBlur = 6
+      const rp = ripple ? (now - ripple.at) / RIPPLE_MS : null
+      for (const c of brainCells) {
+        const fireAt = BRAIN_AT + (c.d * 0.9 + c.rand * 0.1) * BRAIN_MS
+        let g = c.g, k = 0, a = 1
+        if (e < fireAt) {
+          if (e < BRAIN_AT) continue
+          g = "."; a = 0.18 // not yet lit
+        } else if (e - fireAt < FLASH_MS) {
+          k = 1 - (e - fireAt) / FLASH_MS
+          g = bump(c.g, k > 0.5 ? 2 : 1)
         }
-        ctx.restore()
+        if (rp != null) {
+          // A soft band of brightness crossing the folds front to back
+          const pos = bx0 - 20 + (bx1 - bx0 + 40) * rp
+          const band = Math.max(0, 1 - Math.abs(c.x - pos) / 18) * Math.sin(Math.PI * rp)
+          if (band > 0.4) g = bump(g, 1)
+          k = Math.max(k, band * 0.75)
+        }
+        ctx.fillStyle = rgb(mix(BRAIN, FLASH, k), a)
+        ctx.fillText(g, c.x, c.y)
       }
+      ctx.shadowBlur = 0
     }
 
     const step = (now) => {
       raf = 0
-      if (!visible || document.hidden || reduced || decodeAt == null) return
-      const decoding = now - decodeAt < DECODE
-      if (!decoding) {
-        if (wave && now - wave.at > wave.dur) wave = null
-        if (scramble && now - scramble.at > scramble.dur) scramble = null
-        if (!wave && now >= nextWave && brainCells.length) {
-          const [d0, d1] = brainRange()
-          wave = { at: now, dur: WAVE, from: d0 - 30, to: d1 + 30 }
-          nextWave = now + WAVE_EVERY
-        }
-        for (const [cell, f] of flicker) if (f.until < now) flicker.delete(cell)
-        if (now >= nextFlicker && brainCells.length) {
-          for (let i = 0; i < 3 + Math.floor(Math.random() * 4); i++) {
-            const cell = brainCells[Math.floor(Math.random() * brainCells.length)]
-            flicker.set(cell, { g: brighter[cell.g] || cell.g, until: now + 90 })
-          }
-          nextFlicker = now + 700 + Math.random() * 1100
-        }
-      }
-      // Full frame rate while the wave, decode or scramble moves; ~20fps for the slow breathing
-      const busy = decoding || wave || scramble || flicker.size
-      if (busy || now - lastDraw >= IDLE_FPS_MS) draw(now)
-      raf = requestAnimationFrame(step)
+      if (!visible || document.hidden || reduced || introAt == null) return
+      if (ripple && now - ripple.at > RIPPLE_MS) { ripple = null; scheduleRipple(now) }
+      if (!ripple && now >= nextRipple && now - introAt > INTRO_END) ripple = { at: now }
+      draw(now)
+      if (now - introAt < INTRO_END || ripple) raf = requestAnimationFrame(step)
+      else if (Number.isFinite(nextRipple)) timer = setTimeout(() => { timer = 0; wake() }, Math.max(16, nextRipple - performance.now()))
     }
-    const wake = () => {
-      if (raf) return
-      clearTimeout(timer); timer = 0
-      raf = requestAnimationFrame(step)
-    }
-    const sleep = () => {
-      cancelAnimationFrame(raf); clearTimeout(timer)
-      raf = timer = 0
-    }
+    const wake = () => { if (!raf) { clearTimeout(timer); timer = 0; raf = requestAnimationFrame(step) } }
+    const sleep = () => { cancelAnimationFrame(raf); clearTimeout(timer); raf = timer = 0 }
 
-    api.pulse = () => {
-      if (reduced || decodeAt == null) return
-      scramble = { at: performance.now(), dur: PULSE }
+    const rippleNow = () => {
+      if (reduced || introAt == null || ripple) return
+      if (performance.now() - introAt < INTRO_END) return
+      ripple = { at: performance.now() }
       wake()
     }
+    api.pulse = rippleNow
+    const onEnter = (e) => { if (e.pointerType !== "touch") rippleNow() }
+    canvas.addEventListener("pointerenter", onEnter)
 
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting
-      if (visible && decodeAt == null) {
-        decodeAt = performance.now()
-        nextWave = decodeAt + DECODE + 600
-        nextFlicker = decodeAt + DECODE + 400
+      if (visible && introAt == null) {
+        introAt = performance.now()
+        scheduleRipple(introAt + INTRO_END)
       }
       if (visible) { if (reduced) draw(performance.now()); else wake() }
       else sleep()
-    }, { threshold: 0.3 })
+    }, { threshold: 0.4 })
     io.observe(canvas)
 
     const onVisibility = () => {
       if (document.hidden) { pausedAt = performance.now(); sleep(); return }
-      // Shift the clock so a decode in progress resumes where it stopped
+      // Resume the intro where it stopped
       const gap = pausedAt ? performance.now() - pausedAt : 0
-      if (decodeAt != null && Number.isFinite(decodeAt)) decodeAt += gap
-      nextWave += gap; nextFlicker += gap
+      if (introAt != null && Number.isFinite(introAt)) introAt += gap
+      nextRipple += gap
       if (visible) wake()
     }
     document.addEventListener("visibilitychange", onVisibility)
 
     const ro = new ResizeObserver(layout)
     ro.observe(canvas)
-    document.fonts?.load?.(`600 11px 'JetBrains Mono'`).then(layout, () => {})
+    document.fonts?.load?.(`700 10px 'JetBrains Mono'`).then(layout, () => {})
     layout()
 
     return () => {
       sleep()
       io.disconnect()
       ro.disconnect()
+      canvas.removeEventListener("pointerenter", onEnter)
       document.removeEventListener("visibilitychange", onVisibility)
       api.pulse = () => {}
     }
   }, [])
 
-  return (
-    <div aria-hidden="true" className={`pointer-events-none ${className}`}>
-      {/* Soft gold backlight so the block lifts off the dark background */}
-      <div className="absolute inset-[-12%] bg-[radial-gradient(closest-side_at_56%_38%,rgba(245,166,35,0.12),transparent)]" />
-      <canvas ref={canvasRef} className="relative block h-full w-full" />
-    </div>
-  )
+  return <canvas ref={canvasRef} aria-hidden="true" className={`block ${className}`} />
 }

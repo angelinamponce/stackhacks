@@ -383,13 +383,10 @@ const About = () => {
 
         {/* ── Meet the Founders ── */}
         <section id="founders" className="screen-section relative space-y-10">
-          {/* Centered title with the ASCII head-and-brain: top-right beside it on wide screens (nudged
-              into the margin so the face clears the top row of cards), stacked compactly above it below xl */}
-          <div className="relative z-10 flex flex-col items-center gap-3 xl:block">
-            <AsciiBrain
-              ref={brainRef}
-              className="relative h-[176px] w-[146px] xl:absolute xl:-right-14 xl:-top-16 xl:h-[262px] xl:w-[205px]"
-            />
+          {/* ASCII head-and-brain centred above the title, so icon, heading and cards share one axis.
+              In normal flow (32px above the heading), so it never overlaps the cards. */}
+          <div className="relative z-10 flex flex-col items-center gap-8">
+            <AsciiBrain ref={brainRef} className="h-[120px] w-[118px] md:h-[184px] md:w-[182px]" />
             <Reveal>
               <h2 className="founders-title">Meet the Founders</h2>
             </Reveal>
