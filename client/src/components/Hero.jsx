@@ -8,6 +8,9 @@ import { useMagnetic } from '../lib/pointer'
 import { HeroShLogo } from './ShLogo'
 import LoadError from './LoadError'
 import { useIntroDone } from '../lib/intro'
+import AsciiShLogo from './AsciiShLogo'
+import { heroIntroMode, heroPower } from '../lib/heroIntro'
+import { ticker } from '../lib/asciiArt'
 
 function LogoMarquee({ items, duration = 80 }) {
   // Render the list twice so translating by 50% loops seamlessly; it drifts slowly left to right.
@@ -42,6 +45,62 @@ function LogoMarquee({ items, duration = 80 }) {
   )
 }
 
+const BRAND = 'StackHacks.'
+const SHINE_EVENT = 'sh:logo-shine' // the nav mark's one-time shine (components/ShLogo NavLogoShine)
+const SHINE_KEY = 'sh-logo-shine-played'
+// Heading boot-up timeline (ms from the intro start; mobile runs at 0.7x)
+const BOOT = { h1: [0, 400], typeAt: 350, charMs: 65, blink: 170, para: [1250, 1750], actions: [1400, 1900] }
+
+/**
+ * "Power on" for the hero text (play mode only): the heading fades in, "StackHacks." types in with a
+ * blinking gold block cursor that blinks twice and fades, then the paragraph and buttons fade up.
+ * The text is in the DOM throughout (the brand name also has a screen-reader copy).
+ */
+function useHeroBoot(rootRef, startAt, scale, onDone) {
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root || startAt == null) return
+    const h1 = root.querySelector('h1')
+    const chars = [...root.querySelectorAll('[data-hero-char]')]
+    const cursor = root.querySelector('[data-hero-cursor]')
+    const para = root.querySelector('[data-hero-para]')
+    const actions = root.querySelector('[data-hero-actions]')
+    const typeEnd = BOOT.typeAt + chars.length * BOOT.charMs
+    const end = Math.max(typeEnd + BOOT.blink * 4 + 220, BOOT.actions[1])
+    const ease = (t) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3
+    const rise = (el, [a, b], e) => { const p = ease((e - a) / (b - a)); el.style.opacity = String(p); el.style.transform = p < 1 ? `translateY(${(1 - p) * 18}px)` : '' }
+    const d = {
+      visible: true, static: false, idle: false, introDone: false, nextFlickerAt: Infinity,
+      anim: { start: startAt },
+      tick(now) {
+        if (!this.anim) return
+        const e = (now - this.anim.start) / scale
+        rise(h1, BOOT.h1, e)
+        const shown = e < BOOT.typeAt ? 0 : Math.min(chars.length, Math.floor((e - BOOT.typeAt) / BOOT.charMs) + 1)
+        chars.forEach((c, i) => { c.style.opacity = i < shown ? '1' : '0' })
+        if (cursor) {
+          const last = chars[shown - 1]
+          cursor.style.left = last ? `${last.offsetLeft + last.offsetWidth + 4}px` : '0px'
+          const p = e - typeEnd
+          cursor.style.opacity = String(e < BOOT.typeAt - 150 ? 0 : p < 0 ? 1 : p < BOOT.blink * 4 ? Math.floor(p / BOOT.blink) % 2 : Math.max(0, 1 - (p - BOOT.blink * 4) / 200))
+        }
+        rise(para, BOOT.para, e)
+        rise(actions, BOOT.actions, e)
+        if (e >= end) {
+          this.anim = null
+          root.removeAttribute('data-hero-boot')
+          ;[h1, ...chars, cursor, para, actions].forEach((el) => { if (el) { el.style.opacity = ''; el.style.transform = '' } })
+          onDone?.()
+        }
+      },
+      needsFrames() { return !!this.anim },
+    }
+    ticker.add(d)
+    ticker.wake()
+    return () => ticker.remove(d)
+  }, [rootRef, startAt, scale, onDone])
+}
+
 export default function Hero() {
   const [companies, setCompanies] = useState([])
   // Hold the hero's entrance until the first-visit intro hands off, so its stagger is actually seen
@@ -56,6 +115,31 @@ export default function Hero() {
   const magnetic = useMagnetic(6)
   const reduce = useReducedMotion()
   const parallaxRef = useRef(null)
+  const heroRef = useRef(null)
+
+  // Hero intro (lib/heroIntro): once per session or with ?replay=1, after the first-visit splash.
+  // One start time drives the margin-circuit pulses, the ASCII logo assembly and the heading boot-up.
+  const [mode] = useState(heroIntroMode)
+  const [mobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024)
+  const introScale = mobile ? 0.7 : 1
+  const [startAt, setStartAt] = useState(null)
+  const [booted, setBooted] = useState(mode !== 'play')
+  const [asciiFailed, setAsciiFailed] = useState(false)
+  useEffect(() => {
+    if (mode !== 'play' || !introDone || startAt != null) return
+    heroPower.start()
+    setStartAt(heroPower.at)
+  }, [mode, introDone, startAt])
+  const onBootDone = useMemo(() => () => setBooted(true), [])
+  useHeroBoot(heroRef, startAt, introScale, onBootDone)
+  // The nav mark's shine follows the logo's arrival, once per session
+  const onLogoIntroEnd = useMemo(() => () => {
+    try { if (sessionStorage.getItem(SHINE_KEY) === '1') return; sessionStorage.setItem(SHINE_KEY, '1') } catch { /* storage blocked */ }
+    window.dispatchEvent(new Event(SHINE_EVENT))
+  }, [])
+  // In play mode the boot-up drives the text, so framer's entrance stays out of the way
+  const playing = mode === 'play'
+  const entrance = (delay, dur) => (playing ? { initial: false } : { initial: { opacity: 0, y: 24 }, animate: enter, transition: { duration: dur, delay } })
 
   // Signature moment: the SH mark drifts very slowly against the text as the page scrolls (max 40px).
   // Desktop only (on phones the mark sits right above the text); off for reduced motion.
@@ -100,34 +184,34 @@ export default function Hero() {
     // data-network-clear: the home page's background network stays out of the whole landing (the hero has its own sky)
     <section data-landing data-network-clear className="landing overflow-x-hidden flex flex-col">
       {/* Hero Content Section */}
-      <div data-circuit-hero className="landing-hero relative isolate flex flex-1 min-h-0 items-center border-b border-white/[0.08]">
+      {/* data-circuit-pulse="hero": the margin circuits beside the hero pulse with its intro (os/ScrollPulseLayer) */}
+      <div ref={heroRef} data-circuit-hero data-circuit-pulse="hero" data-hero-boot={!booted && playing ? 'pending' : undefined} className="landing-hero relative isolate flex flex-1 min-h-0 items-center border-b border-white/[0.08]">
         <HeroSky avoidRefs={skyAvoid} />
         <div className="relative mx-auto flex w-full max-w-6xl flex-col px-6 lg:block">
           <div ref={textRef} className="mx-auto max-w-xl text-center lg:ml-0 lg:w-3/5 lg:text-left z-10 relative">
 
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={enter}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="landing-title page-title text-primary"
-            >
+            <motion.h1 {...entrance(0.2, 0.6)} className="landing-title page-title text-primary">
               Welcome to <br />
-              <span className="text-accent">StackHacks.</span>
+              <span className="text-accent">
+                <span className="sr-only">{BRAND}</span>
+                <span aria-hidden="true" className="relative inline-block">
+                  {[...BRAND].map((c, i) => <span key={i} data-hero-char>{c}</span>)}
+                  <span data-hero-cursor className="boot-cursor" />
+                </span>
+              </span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 24 }}
-              animate={enter}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              {...entrance(0.3, 0.5)}
+              data-hero-para
               className="landing-copy mx-auto max-w-[560px] lg:mx-0 text-secondary text-base sm:text-[17px] leading-[1.7]"
             >
               Build engineering projects with real-world impact while receiving hands-on mentorship, industry networking, and collaborative development at Binghamton University.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={enter}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              {...entrance(0.4, 0.5)}
+              data-hero-actions
               className="landing-actions flex flex-wrap items-center justify-center lg:justify-start gap-3"
             >
               <Link to="/about" {...magnetic} className="btn-primary group">
@@ -153,7 +237,22 @@ export default function Hero() {
             <div ref={parallaxRef} className="relative flex items-center justify-center will-change-transform">
               {/* One very faint radial glow behind the mark (the mark adds its own tight glow) */}
               <div className="absolute w-64 h-64 sm:w-80 sm:h-80 bg-accent/[0.06] rounded-full blur-[90px] pointer-events-none" />
-              <HeroShLogo logoRef={logoRef} className="landing-logo w-auto" />
+              {/* The SH mark as ASCII; falls back to the vector mark if the artwork can't be sampled */}
+              {asciiFailed ? (
+                <HeroShLogo logoRef={logoRef} className="landing-logo w-auto" />
+              ) : (
+                <div ref={logoRef} className="landing-ascii-logo">
+                  <AsciiShLogo
+                    className="pointer-events-auto h-full w-full cursor-pointer"
+                    reduced={mode === 'reduced'}
+                    waiting={playing && startAt == null}
+                    startAt={startAt}
+                    introScale={introScale}
+                    onFail={() => setAsciiFailed(true)}
+                    onIntroEnd={onLogoIntroEnd}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
