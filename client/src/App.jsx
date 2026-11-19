@@ -16,10 +16,16 @@ import Events from './pages/Events'
 import Community from './pages/Community'
 import Contact from './pages/Contact'
 import SanityRedirect from './pages/SanityRedirect'
+import { OG_PAGES, SITE_NAME } from '../og.config'
 
 function App() {
   const { pathname, hash } = useLocation()
   useScreenSections(pathname)
+  // Tab title follows client-side navigation (each page's built HTML sets it on a direct visit)
+  useEffect(() => {
+    const page = OG_PAGES.find((p) => p.route !== '/' && (pathname === p.route || pathname.startsWith(`${p.route}/`)))
+    document.title = page ? page.docTitle || `${page.title} · ${SITE_NAME}` : OG_PAGES[0].docTitle
+  }, [pathname])
 
   // Lets CSS pause decorative animations while the browser tab is hidden
   useEffect(() => {
